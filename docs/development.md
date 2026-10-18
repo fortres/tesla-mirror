@@ -5,7 +5,12 @@ Everything except Tesla-browser quirks can be developed and tested on a laptop.
 ## Requirements
 
 - Android Studio with an API 30 (Android 11) emulator image.
-- Node 20+ for web tests and dev scripts.
+- Node 22+ for web tests and dev scripts (built-in WebSocket).
+
+```
+sdkmanager "system-images;android-30;google_apis;x86_64"
+avdmanager create avd -n tesla-mirror -k "system-images;android-30;google_apis;x86_64" -d pixel_2_xl
+```
 
 ## Run on the emulator
 

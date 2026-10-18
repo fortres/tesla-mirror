@@ -6,9 +6,10 @@ server: the phone runs a web server on its hotspot, the car's browser opens it.
 
 ## Status
 
-Design stage. No application code yet. See [docs/architecture.md](docs/architecture.md)
-for how it will work and [docs/superpowers/specs/](docs/superpowers/specs/) for the
-original design rationale and decisions.
+Scaffold in place, implementation in progress; see docs/superpowers/plans/.
+See [docs/architecture.md](docs/architecture.md) for how it works and
+[docs/superpowers/specs/](docs/superpowers/specs/) for the original design
+rationale and decisions.
 
 ## Golden rule
 
