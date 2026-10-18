@@ -37,6 +37,7 @@ class ScreenSource(
     private val source: VideoSource = Rtc.factory.createVideoSource(true)
     val track: VideoTrack
     private var stopped = false
+    private var started = false
     private val listener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {}
         override fun onDisplayRemoved(displayId: Int) {}
@@ -59,6 +60,8 @@ class ScreenSource(
     }
 
     fun start() {
+        if (started || stopped) return
+        started = true
         capturer.startCapture(width, height, FPS)
         displayManager.registerDisplayListener(listener, Handler(Looper.myLooper() ?: Looper.getMainLooper()))
     }

@@ -5,6 +5,7 @@ Everything except Tesla-browser quirks can be developed and tested on a laptop.
 ## Requirements
 
 - Android Studio with an API 30 (Android 11) emulator image.
+- JDK 17 on the machine: the build pins `jvmToolchain(17)` and does not download a toolchain.
 - Node 22+ for web tests and dev scripts (built-in WebSocket).
 
 ```
@@ -51,7 +52,7 @@ Not for the car phone.
   coalescing. The same ES modules run in the browser and in node.
 - Synthetic touch: `node tools/tap.mjs <x> <y> [host:port]` (x, y in 0..1,
   default `localhost:8080`) connects to `/ws` and sends a tap to confirm
-  injection reaches the emulator. Exits non-zero if the socket cannot open.
+  injection reaches the emulator. Exit codes: 0 sent, 1 cannot connect (5 s) or closed before the release, 2 bad arguments.
 
 ## Headless end-to-end
 

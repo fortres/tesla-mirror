@@ -61,9 +61,19 @@ class GestureStreamer(
     }
 
     fun restartStrokes(nowMs: Long) {
-        for (s in fingers.values) {
-            s.started = false
-            s.strokeStartMs = nowMs
+        // The cancel already ended the pointers of started, released fingers; a never-started one is still a pending tap.
+        releasing.removeAll { it.second.started }
+        val iter = fingers.values.iterator()
+        while (iter.hasNext()) {
+            val s = iter.next()
+            if (!s.down && s.started) {
+                iter.remove()
+                continue
+            }
+            if (s.down) {
+                s.started = false
+                s.strokeStartMs = nowMs
+            }
         }
     }
 

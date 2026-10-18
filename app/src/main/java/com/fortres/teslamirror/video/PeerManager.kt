@@ -36,6 +36,7 @@ class PeerManager(private val track: VideoTrack, private val signal: (String) ->
     init {
         val config = PeerConnection.RTCConfiguration(emptyList()).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+            tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED
         }
         pc = Rtc.factory.createPeerConnection(config, object : PeerConnection.Observer {
             override fun onIceCandidate(c: IceCandidate) {
@@ -105,7 +106,7 @@ class PeerManager(private val track: VideoTrack, private val signal: (String) ->
     }
 
     private fun firstVideoCodec(sdp: String): String? =
-        sdp.lineSequence().dropWhile { !it.startsWith("m=video") }
+        sdp.lineSequence().dropWhile { !it.startsWith("m=video") }.drop(1).takeWhile { !it.startsWith("m=") }
             .firstOrNull { it.startsWith("a=rtpmap:") }?.substringAfter(' ')?.trim()
 
     fun onRemoteIce(candidate: JsonObject) {

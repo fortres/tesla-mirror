@@ -57,6 +57,10 @@ class MainActivity : AppCompatActivity() {
         binding.url.text = s.url ?: "hotspot off"
         binding.capture.text = "capture: ${if (s.capturing) "on" else "off"}"
         binding.accessibility.text = "accessibility: ${if (s.accessibility) "on" else "off"}"
-        binding.hint.text = if (s.capturing && s.url != null) "Open ${s.url} in the Tesla browser" else "Tap Start to share the screen"
+        binding.hint.text = when {
+            s.capturing && s.url != null -> "Open ${s.url} in the Tesla browser"
+            s.capturing -> "Turn the hotspot on"
+            else -> "Tap Start to share the screen"
+        }
     }
 }

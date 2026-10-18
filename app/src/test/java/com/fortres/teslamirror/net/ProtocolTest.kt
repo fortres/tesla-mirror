@@ -24,6 +24,9 @@ class ProtocolTest {
         assertNull(Protocol.parse("""{"t":"key","k":null}"""))
         assertNull(Protocol.parse("""{"t":"key","k":5}"""))
         assertNull(Protocol.parse("""{"t":"touch","pts":[{"id":0,"x":"0.4","y":0.5}]}"""))
+        assertNull(Protocol.parse("""{"t":"key","k":"foo"}"""))
+        assertNull(Protocol.parse("""{"t":"offer","sdp":null}"""))
+        assertNull(Protocol.parse("""{"t":"touch","pts":[{"id":0,"x":1e999,"y":0}]}"""))
         assertNull(Protocol.parse("[1]"))
     }
     @Test fun buildsState() {

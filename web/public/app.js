@@ -16,6 +16,7 @@ let heartbeat = null;
 let peerGen = 0;
 const startedInside = new Set();
 const panelIds = new Set();
+const WAITING_HINT = $('hint').textContent;
 
 const sendJson = obj => ws && ws.send(JSON.stringify(obj));
 const sendTouch = pts => { debug.touch(pts); sendJson({ t: 'touch', pts }); };
@@ -58,7 +59,7 @@ function beginPeer() {
 }
 
 function onState(msg) {
-  if (!msg.capturing) setHint('Tap Start on phone');
+  if (!msg.capturing) setHint(WAITING_HINT);
   $('a11y').hidden = msg.accessibility !== false;
   capture = msg.capture;
   updateBox();
@@ -107,11 +108,13 @@ function onTouch(e) {
   if (latestPts.length === 0) {
     clearInterval(heartbeat);
     heartbeat = null;
-    coalescer.push([]); // a pending frame must not send a stale snapshot after the release
-    if (wasDown) sendTouch([]);
+    if (wasDown) {
+      coalescer.push([]); // a pending frame must not send a stale snapshot after the release
+      sendTouch([]);
+    }
     return;
   }
-  if (!heartbeat) heartbeat = setInterval(() => sendTouch(latestPts), 100);
+  if (!heartbeat) heartbeat = setInterval(() => { if (latestPts.length > 0) sendTouch(latestPts); }, 100);
   coalescer.push(latestPts);
 }
 

@@ -19,12 +19,13 @@ hotspot is the only network; nothing leaves the LAN.
 
 | Component | File | Responsibility |
 |-----------|------|----------------|
-| MirrorService | `MirrorService.kt` | Foreground service (`specialUse` while serving, `mediaProjection` once capturing). Starts the server on boot/app open; starts/stops capture and peer on a single worker thread; publishes `MirrorState` and pushes `state` to the page. |
+| MirrorService | `MirrorService.kt` | Foreground service (`specialUse` while serving, `mediaProjection` while capturing; stopping capture returns it to serving). Starts the server on boot/app open; starts/stops capture and peer on a single worker thread; publishes `MirrorState` and pushes `state` to the page; releases all fingers when the page disconnects. |
 | ScreenSource | `video/ScreenSource.kt` | Wraps libwebrtc `ScreenCapturerAndroid`; video track from the MediaProjection grant. Half-scale capture, 30 fps, 4 Mbit/s cap. |
-| PeerManager | `video/PeerManager.kt` | One `PeerConnection`, answers the browser's offer, relays ICE over WS. Host candidates only, no STUN/TURN. |
+| PeerManager | `video/PeerManager.kt` | One `PeerConnection`, answers the browser's offer, relays ICE over WS. Host candidates over UDP only (TCP candidates disabled), no STUN/TURN. |
 | WebServer | `net/WebServer.kt` | HTTP :8080 serving `web/public` from classpath resources (`public/**`), or from the dev folder when present (read once at start, see [development.md](development.md)); WebSocket `/ws`. One client: a new connection closes the previous one. |
-| InputService | `input/InputService.kt` | `AccessibilityService`. Normalized touch → display pixels (rotation-aware) → `dispatchGesture`. Back/Home/Recents via `performGlobalAction`. |
+| InputService | `input/InputService.kt` | `AccessibilityService`. Normalized touch → display pixels (rotation-aware) → `dispatchGesture`; at most `getMaxStrokeCount()` fingers (lowest ids). Back/Home/Recents via `performGlobalAction`. |
 | GestureStreamer | `input/GestureStreamer.kt` | Pure Kotlin. Finger snapshots → stroke segments of 20 ms, clocked by dispatch completion, `continueStroke` for ongoing fingers. Unit-tested. |
+| StrokePlanner | `input/StrokePlanner.kt` | Pure Kotlin. Turns a segment plus the previous actual end into the stroke to dispatch (start point, hold nudge). Unit-tested. |
 | MainActivity | `MainActivity.kt` | Status (collects `MirrorState`), server URL, Start (MediaProjection consent), Stop, link to accessibility settings. |
 | BootReceiver | `BootReceiver.kt` | Starts MirrorService after boot; its notification opens MainActivity ([decision](decisions/2026-10-18-boot-starts-service.md)). |
 
@@ -47,9 +48,10 @@ everything else unchanged.
 ## Gesture model
 
 `InputService` keeps the current set of fingers from the latest `touch`
-snapshot. `GestureStreamer` emits 20 ms segments, clocked by dispatch completion: per finger, a segment
-from its previous point to the current one with `willContinue=true`. A finger
-that did not move gets a zero-length segment, so holding becomes a long press.
+snapshot. `GestureStreamer` emits 20 ms segments, clocked by dispatch
+completion: per finger, a segment from its previous point to the current one
+with `willContinue=true`. A finger that did not move gets a zero-length
+segment, so holding becomes a long press.
 All fingers go into one `GestureDescription`, so two fingers form a pinch.
 Finger up → final segment with `willContinue=false`. Down and up within one
 tick → a single short stroke (tap). Strokes are split before the 60 s system
@@ -57,10 +59,12 @@ limit. If no snapshot arrives for 500 ms while fingers are down, all fingers
 are released. If Android cancels a dispatched gesture, the strokes restart as
 new ones from each finger's current point (continuing a cancelled stroke would
 be cancelled again at once). An id released and pressed again between two
-dispatches ends its old stroke and starts a new one.
-`InputService` nudges a held (zero-length) continued segment by half a pixel
-because the framework cancels continued strokes that do not move, and it
-starts each continuation exactly where the previous segment ended.
+dispatches ends its old stroke and starts a new one: the release and the new
+press go out in one gesture, overlapping for 20 ms.
+`InputService` (via `StrokePlanner`) nudges a held (zero-length) continued
+segment by half a pixel because the framework cancels continued strokes that do
+not move, and it starts each continuation exactly where the previous segment
+ended.
 
 The page shows "Waiting for first frame" from peer start until the video
 element reports its first frame; a static phone screen emits no frames.

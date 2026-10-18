@@ -13,6 +13,7 @@ import android.os.HandlerThread
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.IntentCompat
 import com.fortres.teslamirror.input.InputBridge
 import com.fortres.teslamirror.net.Inbound
 import com.fortres.teslamirror.net.Protocol
@@ -71,7 +72,7 @@ class MirrorService : Service(), WebServer.Listener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                val data = intent.getParcelableExtra<Intent>(EXTRA_DATA)
+                val data = IntentCompat.getParcelableExtra(intent, EXTRA_DATA, Intent::class.java)
                 if (data == null) {
                     enterForeground(capturing = false)
                 } else {
@@ -101,7 +102,7 @@ class MirrorService : Service(), WebServer.Listener {
     }
 
     private fun startCapture(data: Intent) {
-        stopCapture()
+        stopCapture(refreshNotification = false)
         val s = ScreenSource(this, data, onStopped = { worker.post { stopCapture() } })
         s.onSizeChanged = { w, h -> worker.post { publish { it.copy(captureW = w, captureH = h) } } }
         s.start()
@@ -109,12 +110,13 @@ class MirrorService : Service(), WebServer.Listener {
         publish { it.copy(capturing = true, captureW = s.width, captureH = s.height) }
     }
 
-    private fun stopCapture() {
+    private fun stopCapture(refreshNotification: Boolean = true) {
         peer?.close()
         peer = null
         source?.stop()
         source = null
         publish { it.copy(capturing = false) }
+        if (refreshNotification) enterForeground(capturing = false)
     }
 
     private fun publish(change: (State) -> State) {
@@ -154,13 +156,14 @@ class MirrorService : Service(), WebServer.Listener {
             clientConnected = false
             peer?.close()
             peer = null
+            InputBridge.service?.onTouch(emptyList())
         }
     }
 
     override fun onDestroy() {
         worker.removeCallbacksAndMessages(null)
         worker.post {
-            stopCapture()
+            stopCapture(refreshNotification = false)
             server.stop()
             publish { it.copy(serverRunning = false) }
             thread.quitSafely()

@@ -74,6 +74,25 @@ class GestureStreamerTest {
         val seg = s.nextBatch(20).single()
         assertTrue(seg.isNew); assertEquals(10f, seg.fromX, 0f); assertTrue(seg.willContinue)
     }
+    @Test fun restartStrokesDropsReleasedFingers() {
+        val s = GestureStreamer()
+        s.onSnapshot(listOf(f(0, 0f, 0f)), 0); s.nextBatch(0)
+        s.onSnapshot(emptyList(), 10)
+        s.restartStrokes(20)
+        assertTrue(s.nextBatch(20).isEmpty())
+        assertFalse(s.hasFingers)
+    }
+    @Test fun restartStrokesKeepsPendingTap() {
+        val s = GestureStreamer()
+        s.onSnapshot(listOf(f(0, 0f, 0f)), 0); s.nextBatch(0)
+        s.onSnapshot(listOf(f(0, 0f, 0f), f(1, 50f, 50f)), 10)
+        s.onSnapshot(listOf(f(0, 0f, 0f)), 12)
+        s.restartStrokes(20)
+        val batch = s.nextBatch(20)
+        val tap = batch.single { it.id == 1 }
+        assertTrue(tap.isNew); assertEquals(50, tap.durationMs); assertFalse(tap.willContinue)
+        assertTrue(batch.single { it.id == 0 }.isNew)
+    }
     @Test fun reusedIdWithinOneTickReleasesThenStartsNew() {
         val s = GestureStreamer()
         s.onSnapshot(listOf(f(0, 0f, 0f)), 0); s.nextBatch(0)

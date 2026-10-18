@@ -54,7 +54,7 @@ class InputService : AccessibilityService() {
     fun onTouch(pts: List<Point>) {
         handler.post {
             val bounds = getSystemService(WindowManager::class.java).maximumWindowMetrics.bounds
-            val fingers = pts.map {
+            val fingers = pts.sortedBy { it.id }.take(GestureDescription.getMaxStrokeCount()).map {
                 val (x, y) = CoordMapper.toPixels(it.x, it.y, bounds.width(), bounds.height())
                 Finger(it.id, x, y)
             }
@@ -84,17 +84,14 @@ class InputService : AccessibilityService() {
         if (batch.isEmpty()) return
         val builder = GestureDescription.Builder()
         for (seg in batch) {
-            val prevEnd = if (seg.isNew) null else ends[seg.id]
-            val fromX = prevEnd?.x ?: seg.fromX
-            val fromY = prevEnd?.y ?: seg.fromY
-            // The framework cancels a continued stroke that does not move, so a hold drifts by half a pixel.
-            val toX = if (seg.willContinue && fromX == seg.toX && fromY == seg.toY) seg.toX + 0.5f else seg.toX
+            val end = ends[seg.id]
+            val plan = planStroke(seg, end?.let { it.x to it.y })
             val path = Path().apply {
-                moveTo(fromX, fromY)
-                lineTo(toX, seg.toY)
+                moveTo(plan.fromX, plan.fromY)
+                lineTo(plan.toX, plan.toY)
             }
-            if (seg.willContinue) ends[seg.id] = PointF(toX, seg.toY) else ends.remove(seg.id)
-            val prev = if (seg.isNew) null else strokes[seg.id]
+            if (seg.willContinue) ends[seg.id] = PointF(plan.toX, plan.toY) else ends.remove(seg.id)
+            val prev = if (plan.isNew) null else strokes[seg.id]
             val stroke = prev?.continueStroke(path, 0, seg.durationMs, seg.willContinue)
                 ?: StrokeDescription(path, 0, seg.durationMs, seg.willContinue)
             if (seg.willContinue) strokes[seg.id] = stroke else strokes.remove(seg.id)

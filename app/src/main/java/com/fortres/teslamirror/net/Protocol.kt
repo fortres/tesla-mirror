@@ -20,18 +20,21 @@ sealed interface Inbound {
 }
 
 object Protocol {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json
+    private val keys = setOf("back", "home", "recents")
 
-    fun parse(text: String): Inbound? = runCatching {
+    fun parse(text: String): Inbound? = try {
         val o = json.parseToJsonElement(text).jsonObject
         when (o.str("t")) {
             "offer" -> Inbound.Offer(o.str("sdp")!!)
             "ice" -> Inbound.Ice(o["candidate"] as JsonObject)
             "touch" -> Inbound.Touch((o["pts"] as JsonArray).map { point(it as JsonObject)!! })
-            "key" -> Inbound.Key(o.str("k")!!)
+            "key" -> Inbound.Key(o.str("k")!!.takeIf { it in keys }!!)
             else -> null
         }
-    }.getOrNull()
+    } catch (e: Exception) {
+        null
+    }
 
     private fun JsonObject.str(key: String): String? =
         (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content

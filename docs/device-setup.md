@@ -18,7 +18,7 @@ mounted landscape).
    show as a tall image in the middle of the Tesla screen; that is expected.
 8. Open the app, tap Start, accept screen capture.
 9. In the Tesla: connect Wi-Fi to the phone's hotspot, open the browser at the
-   URL shown in the app (shown in the app, `http://<phone-ip>:8080`), bookmark it. Re-check it after
+   URL shown in the app (`http://<phone-ip>:8080`), bookmark it. Re-check it after
    a reboot: Android 11 may pick a different hotspot subnet.
 
 After a phone reboot the service starts itself (the web page is already

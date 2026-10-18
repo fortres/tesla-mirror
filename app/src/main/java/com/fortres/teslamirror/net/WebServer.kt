@@ -39,6 +39,10 @@ class WebServer(
     private var engine: EmbeddedServer<*, *>? = null
 
     fun start() {
+        if (engine != null) {
+            log.info("start ignored: already started")
+            return
+        }
         engine = embeddedServer(CIO, port = port, host = "0.0.0.0") { module() }.also { it.start(wait = false) }
     }
 

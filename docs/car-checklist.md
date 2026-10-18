@@ -24,7 +24,8 @@ running, capture started, hotspot on.
 9. Bluetooth: Waze voice, Telegram notification sound, an incoming call shown
    on the Tesla screen.
 10. Accessibility service stays enabled after the app is restarted; the page
-    shows no "Accessibility off" badge.
+    shows no "Accessibility off" badge. If it is off, re-enable it per
+    [device-setup.md](device-setup.md) step 2.
 11. Turn the car off and on: hotspot reconnects, page recovers from the
     bookmark without re-pairing anything.
 
