@@ -146,20 +146,19 @@ function closeH264() {
   }
 }
 
-/** @param {StateMsg['capture']} size */
-function beginH264(size) {
+function beginH264() {
   const gen = ++h264Gen;
   setHint('Waiting for first frame', 'Move something on the phone');
   h264 = startH264({
     video: stream,
-    size,
+    getSize: () => capture ?? { w: 1, h: 1 },
     onFirstFrame: () => {
       if (gen === h264Gen) setHint(null);
     },
     onStat: (stat) => {
       if (gen !== h264Gen) return;
       debug.set('dropped', stat.dropped);
-      debug.set('decoded', stat.decoded);
+      debug.set('appended', stat.appended);
     },
   });
   latencyTimer = setInterval(() => {
@@ -196,7 +195,7 @@ function onState(msg) {
     if (!msg.capturing) closeH264();
     else if (!decoderSupported)
       setHint('Browser cannot play the iPhone stream', 'Use the Android phone or update the car');
-    else if (!h264) beginH264(msg.capture);
+    else if (!h264) beginH264();
     return;
   }
   closeH264();

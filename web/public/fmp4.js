@@ -88,9 +88,9 @@ export function codecFromSps(sps) {
 export function initSegment({ sps, pps, width, height, timescale = 1_000_000 }) {
   const ftyp = box(
     'ftyp',
-    bytes(16, (v) => {
-      for (const [i, s] of ['isom', 'iso6', 'avc1', 'mp41'].entries())
-        for (let j = 0; j < 4; j++) v.setUint8(i * 4 + j, s.charCodeAt(j));
+    bytes(24, (v) => {
+      for (const [i, s] of ['isom', '', 'isom', 'iso6', 'avc1', 'mp41'].entries())
+        for (let j = 0; j < s.length; j++) v.setUint8(i * 4 + j, s.charCodeAt(j));
     }),
   );
   const mvhd = fullBox(
@@ -101,7 +101,7 @@ export function initSegment({ sps, pps, width, height, timescale = 1_000_000 }) 
       v.setUint32(8, timescale);
       v.setUint32(16, 0x00010000);
       v.setUint16(20, 0x0100);
-      MATRIX.forEach((m, i) => v.setUint32(36 + i * 4, m));
+      MATRIX.forEach((m, i) => v.setUint32(32 + i * 4, m));
       v.setUint32(92, 2);
     }),
   );
@@ -111,7 +111,7 @@ export function initSegment({ sps, pps, width, height, timescale = 1_000_000 }) 
     3,
     bytes(80, (v) => {
       v.setUint32(8, 1);
-      MATRIX.forEach((m, i) => v.setUint32(40 + i * 4, m));
+      MATRIX.forEach((m, i) => v.setUint32(36 + i * 4, m));
       v.setUint32(72, width << 16);
       v.setUint32(76, height << 16);
     }),

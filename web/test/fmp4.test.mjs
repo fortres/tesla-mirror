@@ -66,6 +66,14 @@ test('initSegment box layout', () => {
   const tkhd = find(init, ['moov', 'trak', 'tkhd']);
   const view = new DataView(init.buffer);
   assert.equal(view.getUint32(tkhd.end - 8), 640 << 16);
+  const mvhd = find(init, ['moov', 'mvhd']);
+  for (const [at, first] of [
+    [mvhd.start + 12 + 32, 0],
+    [tkhd.start + 12 + 36, 0],
+  ]) {
+    assert.equal(view.getUint32(at + first), 0x00010000);
+    assert.equal(view.getUint32(at + 32), 0x40000000);
+  }
   assert.equal(view.getUint32(tkhd.end - 4), 1280 << 16);
 });
 

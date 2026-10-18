@@ -3,7 +3,6 @@ import { splitNalus, codecFromSps, initSegment, mediaSegment } from './fmp4.js';
 
 const DEFAULT_CODEC = 'avc1.4D401F';
 const FRAME_US = 33_333;
-const MAX_FRAME_US = 100_000;
 const STAT_INTERVAL_MS = 1000;
 const TRIM_INTERVAL_MS = 5000;
 const KEEP_BEHIND_S = 10;
@@ -12,7 +11,7 @@ const LIVE_SEEK_BACK_S = 0.05;
 const NAL_SPS = 7;
 const NAL_PPS = 8;
 
-/** @typedef {{ dropped: number, decoded: number }} H264Stat */
+/** @typedef {{ dropped: number, appended: number }} H264Stat */
 
 /** @param {string} [codec] */
 export function h264Supported(codec = DEFAULT_CODEC) {
@@ -33,15 +32,15 @@ function sameBytes(a, b) {
 /**
  * @param {object} options
  * @param {HTMLVideoElement} options.video
- * @param {{ w: number, h: number }} options.size
+ * @param {() => { w: number, h: number }} options.getSize
  * @param {() => void} options.onFirstFrame
  * @param {(stat: H264Stat) => void} options.onStat
  */
-export function startH264({ video, size, onFirstFrame, onStat }) {
+export function startH264({ video, getSize, onFirstFrame, onStat }) {
   let gate = createKeyGate();
   let closed = false;
   let dropped = 0;
-  let decoded = 0;
+  let appended = 0;
   let lastStatAt = 0;
   /** @type {ReturnType<typeof setTimeout> | null} */
   let statTimer = null;
@@ -60,14 +59,14 @@ export function startH264({ video, size, onFirstFrame, onStat }) {
   let queue = [];
   let seq = 0;
   let nextDecodeUs = 0;
-  /** @type {{ ptsUs: number, key: boolean, nalus: Uint8Array[] } | null} */
-  let prev = null;
+  /** @type {Uint8Array<ArrayBuffer> | null} */
+  let initQueued = null;
 
   function emitStat() {
     if (statTimer) clearTimeout(statTimer);
     statTimer = null;
     lastStatAt = performance.now();
-    onStat({ dropped, decoded });
+    onStat({ dropped, appended });
   }
 
   function statChanged() {
@@ -81,7 +80,6 @@ export function startH264({ video, size, onFirstFrame, onStat }) {
     ms = null;
     sb = null;
     queue = [];
-    prev = null;
     curSps = null;
     if (old && objectUrl) {
       video.removeAttribute('src');
@@ -106,7 +104,7 @@ export function startH264({ video, size, onFirstFrame, onStat }) {
       fail();
       return;
     }
-    decoded++;
+    if (next !== initQueued) appended++;
     statChanged();
   }
 
@@ -143,7 +141,9 @@ export function startH264({ video, size, onFirstFrame, onStat }) {
     ms = source;
     objectUrl = URL.createObjectURL(source);
     const mime = `video/mp4; codecs="${codecFromSps(sps)}"`;
-    queue = [initSegment({ sps, pps, width: size.w, height: size.h })];
+    const { w, h } = getSize();
+    initQueued = initSegment({ sps, pps, width: w, height: h });
+    queue = [initQueued];
     seq = 0;
     nextDecodeUs = 0;
     source.addEventListener(
@@ -167,23 +167,6 @@ export function startH264({ video, size, onFirstFrame, onStat }) {
       { once: true },
     );
     video.src = objectUrl;
-  }
-
-  /** @param {number} durationUs */
-  function flushPrev(durationUs) {
-    if (!prev) return;
-    const durUs = Math.min(Math.max(durationUs, 1), MAX_FRAME_US);
-    queue.push(
-      mediaSegment({
-        seq: ++seq,
-        decodeTimeUs: nextDecodeUs,
-        durationUs: durUs,
-        key: prev.key,
-        nalus: prev.nalus,
-      }),
-    );
-    nextDecodeUs += durUs;
-    prev = null;
   }
 
   function onPlaying() {
@@ -214,12 +197,18 @@ export function startH264({ video, size, onFirstFrame, onStat }) {
           fail();
           return;
         }
-        if (ms && sameBytes(sps, curSps)) flushPrev(frame.ptsUs - (prev?.ptsUs ?? 0));
-        else build(sps, pps);
-      } else if (prev) {
-        flushPrev(frame.ptsUs - prev.ptsUs || FRAME_US);
+        if (!ms || !sameBytes(sps, curSps)) build(sps, pps);
       }
-      prev = { ptsUs: frame.ptsUs, key: frame.key, nalus };
+      queue.push(
+        mediaSegment({
+          seq: ++seq,
+          decodeTimeUs: nextDecodeUs,
+          durationUs: FRAME_US,
+          key: frame.key,
+          nalus,
+        }),
+      );
+      nextDecodeUs += FRAME_US;
       pump();
     },
     close() {
