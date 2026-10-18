@@ -58,6 +58,16 @@ are released.
 Coordinates: capture includes the status bar and is already rotated, so
 normalized `x,y` × real display size is a 1:1 mapping.
 
+## Orientation
+
+The phone is mounted landscape with system auto-rotate on. Capture follows the
+logical display, not the physical one, so the picture on the Tesla is always
+upright: an app that supports landscape fills the view; a portrait-only app
+appears as a tall image centered with black bars, and touches still map 1:1.
+On a display size change `ScreenSource` restarts capture with the new size,
+`MirrorService` pushes a new `state`, and the page recomputes the video box
+from the video element's `resize` event.
+
 ## Startup and recovery
 
 - Boot → BootReceiver → MainActivity → MirrorService. Server is up before

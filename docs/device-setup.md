@@ -12,8 +12,9 @@ mounted landscape).
 6. Pair the phone with the Tesla over Bluetooth. The phone becomes the Tesla
    phone: audio and incoming calls go through the car natively. Put a SIM in the
    phone or forward the main number to it if calls are needed.
-7. Sign in to Waze, Telegram, YouTube on the phone. Lock screen orientation
-   off so apps follow the landscape mount, or force landscape per app.
+7. Sign in to Waze, Telegram, YouTube on the phone. Turn system auto-rotate
+   on so apps follow the landscape mount. Apps that only support portrait
+   show as a tall image in the middle of the Tesla screen; that is expected.
 8. Open the app, tap Start, accept screen capture.
 9. In the Tesla: connect Wi-Fi to the phone's hotspot, open the browser at the
    URL shown in the app (typically `http://192.168.43.1:8080`), bookmark it.

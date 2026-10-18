@@ -30,6 +30,9 @@ covers what you changed and it matters to the next reader, add it there.
 - Web side is plain HTML/JS ES modules, no build step, no framework.
 - Targets Android 11+ (minSdk 30), stock OS, no root. Do not add
   root-only or Play-Store-only mechanisms.
+- Plans run subagent-driven with per-role models (Sonnet builds, Haiku
+  explores, Opus or Fable orchestrates and reviews). See
+  [docs/agent-workflow.md](docs/agent-workflow.md).
 
 ## Layout
 
@@ -45,6 +48,7 @@ docs/                living documentation, see below
 
 ## Docs
 
+- [agent-workflow.md](docs/agent-workflow.md) — execution model, model routing, review moments.
 - [architecture.md](docs/architecture.md) — components, data flow, where each lives.
 - [protocol.md](docs/protocol.md) — WebSocket messages between page and phone.
 - [development.md](docs/development.md) — build, run on emulator, test without the car.

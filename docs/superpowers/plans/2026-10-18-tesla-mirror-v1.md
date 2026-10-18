@@ -8,6 +8,8 @@
 
 **Tech Stack:** Kotlin 2.3.21, AGP 8.13.2, Gradle 8.14.6, minSdk 30 / compileSdk 35 / targetSdk 34, Ktor 3.6.0 (server-cio, server-websockets, server-test-host), kotlinx-serialization-json 1.9.0, io.getstream:stream-webrtc-android 1.3.10, JUnit 4, Node 22 (`node --test`, built-in `WebSocket`).
 
+**Execution:** subagent-driven with the model routing in `docs/agent-workflow.md` (Sonnet implements, Haiku explores, Opus/Fable reviews).
+
 **Spec:** `docs/superpowers/specs/2026-10-18-tesla-mirror-design.md`. Living docs in `docs/` (architecture, protocol, development, device-setup, car-checklist) must be kept in sync by every task that changes behavior (AGENTS.md golden rule).
 
 ## Global Constraints
@@ -480,7 +482,7 @@ Expected: failures (modules missing).
 
 `index.html`: `<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">`, `<title>tesla-mirror</title>`, `<video id="video" autoplay muted playsinline>`, `<div id="hint">Tap Start on phone</div>`, `<nav id="panel">` with buttons `data-key="back|home|recents"` and `id="debugToggle"`, `<pre id="debug" hidden>`, `<script type="module" src="app.js">`.
 `style.css`: black full-viewport body, `touch-action: none; overscroll-behavior: none; user-select: none`, video `object-fit: contain` filling the viewport, panel fixed on the right edge, 48 px buttons, 60 % opacity, debug panel bottom-left monospace.
-`app.js` wiring: `connect` → on `state`: show/hide hint; when `capturing` and no peer, `startPeer`; on `answer|ice` → `peer.handle`; `onFailed` → close WS (reconnect restarts everything); `ontrack` → `video.srcObject`; compute `box` from `videoBox(innerWidth, innerHeight, aspect)` where aspect comes from `video.videoWidth/videoHeight` once playing, else `state.capture`; on `resize` recompute; `touchstart/touchmove/touchend/touchcancel` on `document` with `preventDefault` → `snapshot(e.touches, box)` → coalescer (`requestAnimationFrame` as `schedule`) → `send(JSON.stringify({t:'touch', pts}))`; `touchend` with no touches sends `pts: []` immediately; while any finger is down, a 100 ms interval re-sends the latest snapshot so the phone's 500 ms watchdog does not release a finger that is simply holding still (long press, paused drag); panel buttons send `{t:'key', k}`; debug toggle flips `hidden`.
+`app.js` wiring: `connect` → on `state`: show/hide hint; when `capturing` and no peer, `startPeer`; on `answer|ice` → `peer.handle`; `onFailed` → close WS (reconnect restarts everything); `ontrack` → `video.srcObject`; compute `box` from `videoBox(innerWidth, innerHeight, aspect)` where aspect comes from `video.videoWidth/videoHeight` once playing, else `state.capture`; recompute on window `resize` and on the video element's `resize` event (fires when the phone rotates and the stream changes size); `touchstart/touchmove/touchend/touchcancel` on `document` with `preventDefault` → `snapshot(e.touches, box)` → coalescer (`requestAnimationFrame` as `schedule`) → `send(JSON.stringify({t:'touch', pts}))`; `touchend` with no touches sends `pts: []` immediately; while any finger is down, a 100 ms interval re-sends the latest snapshot so the phone's 500 ms watchdog does not release a finger that is simply holding still (long press, paused drag); panel buttons send `{t:'key', k}`; debug toggle flips `hidden`.
 
 - [ ] **Step 5: Run tests**
 
@@ -518,7 +520,8 @@ fun captureSize(displayW: Int, displayH: Int, scale: Int = 2): Pair<Int, Int>   
 class ScreenSource(context: Context, projection: Intent, private val onStopped: () -> Unit) {
     val width: Int; val height: Int; val track: VideoTrack
     fun start()                                      // ScreenCapturerAndroid.startCapture(width, height, FPS)
-    fun onDisplayChanged()                           // re-read display size; changeCaptureFormat if it changed
+    fun onDisplayChanged()                           // re-read display size; changeCaptureFormat if it changed; then onSizeChanged(w, h)
+    var onSizeChanged: (Int, Int) -> Unit            // set by MirrorService
     fun stop()
 }
 class PeerManager(private val track: VideoTrack, private val signal: (String) -> Unit) {
@@ -601,7 +604,7 @@ Run: `./gradlew :app:testDebugUnitTest --tests '*NetUtilTest*' --console=plain` 
 - [ ] **Step 2: Implement `MirrorState.kt` and `MirrorService.kt`**
 
 - `onCreate`: notification channel `mirror`; `startForeground` (API ≥ 34: `FOREGROUND_SERVICE_TYPE_SPECIAL_USE`, otherwise untyped) with a notification whose tap opens `MainActivity`; `Rtc.init`; `WebServer(devDir = File(getExternalFilesDir(null), "web"), listener = this).start()` (the server serves that folder instead of APK assets only when it exists; this is the dev mode from `docs/development.md`); publish state (`url = "http://${NetUtil.pickHotspotAddress(...)}:8080"`).
-- `ACTION_START`: `MediaProjectionManager.getMediaProjection` is done inside `ScreenCapturerAndroid`, so only: `startForeground` again with `FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION`, create `ScreenSource(this, data, onStopped = ::stopCapture)`, `start()`, publish `capturing = true`, send state to the client.
+- `ACTION_START`: `MediaProjectionManager.getMediaProjection` is done inside `ScreenCapturerAndroid`, so only: `startForeground` again with `FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION`, create `ScreenSource(this, data, onStopped = ::stopCapture)`, set `onSizeChanged` to publish the new capture size and send state to the client, `start()`, publish `capturing = true`, send state to the client.
 - `ACTION_STOP`: `stopCapture()` (close peer, stop source), keep serving.
 - `WebServer.Listener`: `onClientConnected` → send `Protocol.state(...)`; `onMessage`: `Offer` → create `PeerManager(source.track, server::send)` (close any previous) and `onOffer`; `Ice` → `peer?.onRemoteIce`; `Touch` → `InputBridge.service?.onTouch(pts)`; `Key` → `InputBridge.service?.onKey`; `onClientDisconnected` → close peer.
 - Poll `InputBridge.enabled` every 2 s and push state when it changes (service binding has no callback into the app).
