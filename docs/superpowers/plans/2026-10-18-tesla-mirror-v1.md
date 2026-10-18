@@ -22,7 +22,7 @@
 - Constants: capture at half scale, 30 fps, 4 Mbit/s max, H.264 preferred; port 8080; WS reconnect backoff 1–5 s; touch watchdog 500 ms; stroke split before 60 s (use 50 s); gesture segment 20 ms; tap 50 ms.
 - One WS client at a time; a new connection closes the previous one.
 - Pure logic (`Protocol`, `CoordMapper`, `GestureStreamer`, `touch.js` functions) must not depend on Android or DOM APIs.
-- Package `com.fortres.teslamirror`. Logcat tag `TeslaMirror`.
+- Package `app.teslamirror`. Logcat tag `TeslaMirror`.
 
 ## Review Focus
 
@@ -37,7 +37,7 @@
 ### Task 0: Project scaffold
 
 **Files:**
-- Create: `.gitignore`, `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `gradle/wrapper/*` (via `gradle wrapper`), `app/build.gradle.kts`, `app/proguard-rules.pro`, `app/src/main/AndroidManifest.xml`, `app/src/main/res/values/strings.xml`, `app/src/main/res/values/themes.xml`, `app/src/main/java/com/fortres/teslamirror/MainActivity.kt` (placeholder), `web/public/index.html` (placeholder), `web/package.json`
+- Create: `.gitignore`, `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, `gradle/wrapper/*` (via `gradle wrapper`), `app/build.gradle.kts`, `app/proguard-rules.pro`, `app/src/main/AndroidManifest.xml`, `app/src/main/res/values/strings.xml`, `app/src/main/res/values/themes.xml`, `app/src/main/java/app/teslamirror/MainActivity.kt` (placeholder), `web/public/index.html` (placeholder), `web/package.json`
 - Modify: `AGENTS.md` (status line), `docs/development.md` (Node 22, API 30 image commands)
 
 **Interfaces:**
@@ -60,7 +60,7 @@ Versions: `agp = "8.13.2"`, `kotlin = "2.3.21"`, `serialization = "1.9.0"`, `kto
 
 `settings.gradle.kts`: pluginManagement + dependencyResolutionManagement with `google()` and `mavenCentral()`, `rootProject.name = "tesla-mirror"`, `include(":app")`.
 
-`app/build.gradle.kts`: `namespace = "com.fortres.teslamirror"`, `compileSdk = 35`, `minSdk = 30`, `targetSdk = 34`, `versionCode = 1`, `versionName = "0.1"`, Java 17 toolchain, `buildFeatures { viewBinding = true }`, and:
+`app/build.gradle.kts`: `namespace = "app.teslamirror"`, `compileSdk = 35`, `minSdk = 30`, `targetSdk = 34`, `versionCode = 1`, `versionName = "0.1"`, Java 17 toolchain, `buildFeatures { viewBinding = true }`, and:
 ```kotlin
 sourceSets["main"].resources.srcDir("../web")   // web/public/** becomes classpath "public/**"
 packaging { resources.excludes += setOf("test/**", "package.json", "META-INF/INDEX.LIST", "META-INF/io.netty.versions.properties") }
@@ -103,8 +103,8 @@ git add -A && git commit -m "Scaffold Android app and web module
 ### Task 1: Protocol messages
 
 **Files:**
-- Create: `app/src/main/java/com/fortres/teslamirror/net/Protocol.kt`
-- Test: `app/src/test/java/com/fortres/teslamirror/net/ProtocolTest.kt`
+- Create: `app/src/main/java/app/teslamirror/net/Protocol.kt`
+- Test: `app/src/test/java/app/teslamirror/net/ProtocolTest.kt`
 
 **Interfaces:**
 - Produces:
@@ -184,8 +184,8 @@ git add -A && git commit -m "Add WebSocket protocol parser and builders" -m "Co-
 ### Task 2: CoordMapper and GestureStreamer (pure Kotlin)
 
 **Files:**
-- Create: `app/src/main/java/com/fortres/teslamirror/input/CoordMapper.kt`, `app/src/main/java/com/fortres/teslamirror/input/GestureStreamer.kt`
-- Test: `app/src/test/java/com/fortres/teslamirror/input/CoordMapperTest.kt`, `app/src/test/java/com/fortres/teslamirror/input/GestureStreamerTest.kt`
+- Create: `app/src/main/java/app/teslamirror/input/CoordMapper.kt`, `app/src/main/java/app/teslamirror/input/GestureStreamer.kt`
+- Test: `app/src/test/java/app/teslamirror/input/CoordMapperTest.kt`, `app/src/test/java/app/teslamirror/input/GestureStreamerTest.kt`
 
 **Interfaces:**
 - Produces:
@@ -298,7 +298,7 @@ git add -A && git commit -m "Add coordinate mapping and gesture streaming logic"
 ### Task 3: InputService (AccessibilityService)
 
 **Files:**
-- Create: `app/src/main/java/com/fortres/teslamirror/input/InputService.kt`, `app/src/main/java/com/fortres/teslamirror/input/InputBridge.kt`, `app/src/main/res/xml/accessibility_service.xml`
+- Create: `app/src/main/java/app/teslamirror/input/InputService.kt`, `app/src/main/java/app/teslamirror/input/InputBridge.kt`, `app/src/main/res/xml/accessibility_service.xml`
 - Modify: `app/src/main/AndroidManifest.xml`, `app/src/main/res/values/strings.xml`
 
 **Interfaces:**
@@ -333,7 +333,7 @@ Run: `./gradlew installDebug`; in the emulator enable the service under Settings
 ```bash
 adb shell settings get secure enabled_accessibility_services
 ```
-Expected: contains `com.fortres.teslamirror/.input.InputService`. (Gesture injection is exercised end-to-end in Task 8.)
+Expected: contains `app.teslamirror/.input.InputService`. (Gesture injection is exercised end-to-end in Task 8.)
 
 - [ ] **Step 4: Commit**
 
@@ -346,8 +346,8 @@ git add -A && git commit -m "Add accessibility service that injects streamed ges
 ### Task 4: WebServer (Ktor)
 
 **Files:**
-- Create: `app/src/main/java/com/fortres/teslamirror/net/WebServer.kt`
-- Test: `app/src/test/java/com/fortres/teslamirror/net/WebServerTest.kt`
+- Create: `app/src/main/java/app/teslamirror/net/WebServer.kt`
+- Test: `app/src/test/java/app/teslamirror/net/WebServerTest.kt`
 
 **Interfaces:**
 - Consumes: `Protocol`, `Inbound`.
@@ -504,8 +504,8 @@ git add -A && git commit -m "Add browser page: WebRTC playback, touch capture, d
 ### Task 6: ScreenSource and PeerManager (WebRTC)
 
 **Files:**
-- Create: `app/src/main/java/com/fortres/teslamirror/video/Rtc.kt`, `app/src/main/java/com/fortres/teslamirror/video/ScreenSource.kt`, `app/src/main/java/com/fortres/teslamirror/video/PeerManager.kt`
-- Test: `app/src/test/java/com/fortres/teslamirror/video/ScreenSourceTest.kt`
+- Create: `app/src/main/java/app/teslamirror/video/Rtc.kt`, `app/src/main/java/app/teslamirror/video/ScreenSource.kt`, `app/src/main/java/app/teslamirror/video/PeerManager.kt`
+- Test: `app/src/test/java/app/teslamirror/video/ScreenSourceTest.kt`
 
 **Interfaces:**
 - Consumes: `Protocol.answer`, `Protocol.ice`.
@@ -573,9 +573,9 @@ git add -A && git commit -m "Add screen capture video source and WebRTC peer" -m
 ### Task 7: MirrorService, MainActivity, BootReceiver
 
 **Files:**
-- Create: `app/src/main/java/com/fortres/teslamirror/MirrorService.kt`, `app/src/main/java/com/fortres/teslamirror/MirrorState.kt`, `app/src/main/java/com/fortres/teslamirror/BootReceiver.kt`, `app/src/main/java/com/fortres/teslamirror/NetUtil.kt`, `app/src/main/res/layout/activity_main.xml`, `docs/decisions/2026-10-18-boot-starts-service.md`
-- Modify: `app/src/main/java/com/fortres/teslamirror/MainActivity.kt`, `app/src/main/AndroidManifest.xml`, `docs/architecture.md`, `docs/device-setup.md`
-- Test: `app/src/test/java/com/fortres/teslamirror/NetUtilTest.kt`
+- Create: `app/src/main/java/app/teslamirror/MirrorService.kt`, `app/src/main/java/app/teslamirror/MirrorState.kt`, `app/src/main/java/app/teslamirror/BootReceiver.kt`, `app/src/main/java/app/teslamirror/NetUtil.kt`, `app/src/main/res/layout/activity_main.xml`, `docs/decisions/2026-10-18-boot-starts-service.md`
+- Modify: `app/src/main/java/app/teslamirror/MainActivity.kt`, `app/src/main/AndroidManifest.xml`, `docs/architecture.md`, `docs/device-setup.md`
+- Test: `app/src/test/java/app/teslamirror/NetUtilTest.kt`
 
 **Interfaces:**
 - Consumes: `WebServer`, `PeerManager`, `ScreenSource`, `InputBridge`, `Protocol.state`.
@@ -618,12 +618,12 @@ Manifest: service `android:foregroundServiceType="mediaProjection|specialUse"` w
 
 - [ ] **Step 4: Build, install, smoke-test on the emulator**
 
-Run: `./gradlew installDebug && adb shell am start -n com.fortres.teslamirror/.MainActivity && adb forward tcp:8080 tcp:8080 && curl -s localhost:8080 | head -3`
+Run: `./gradlew installDebug && adb shell am start -n app.teslamirror/.MainActivity && adb forward tcp:8080 tcp:8080 && curl -s localhost:8080 | head -3`
 Expected: the activity shows the URL and "server: running"; curl prints the page head.
 
 - [ ] **Step 5: Record the boot decision and update docs**
 
-`docs/decisions/2026-10-18-boot-starts-service.md`: Context (Android 10+ blocks activity launches from BOOT_COMPLETED), Decision (BootReceiver starts MirrorService; its notification opens MainActivity; one tap on Start still required), Consequences. Update `docs/architecture.md` (BootReceiver and MirrorService rows, startup section), `docs/device-setup.md` (what happens after reboot) and `docs/development.md` dev mode: `adb push web/public/. /sdcard/Android/data/com.fortres.teslamirror/files/web/` enables it, deleting that folder disables it; no in-app toggle.
+`docs/decisions/2026-10-18-boot-starts-service.md`: Context (Android 10+ blocks activity launches from BOOT_COMPLETED), Decision (BootReceiver starts MirrorService; its notification opens MainActivity; one tap on Start still required), Consequences. Update `docs/architecture.md` (BootReceiver and MirrorService rows, startup section), `docs/device-setup.md` (what happens after reboot) and `docs/development.md` dev mode: `adb push web/public/. /sdcard/Android/data/app.teslamirror/files/web/` enables it, deleting that folder disables it; no in-app toggle.
 
 - [ ] **Step 6: Commit**
 
@@ -654,7 +654,7 @@ Expected: a tap lands in the middle of the emulator screen (visible in the mirro
 4. In Chrome DevTools device mode: tap, drag, long press, Shift-drag pinch on a map app or the launcher.
 Expected: emulator reacts; overlay shows two ids during pinch.
 5. Back/Home/Recents buttons act on the emulator.
-6. `adb shell am force-stop com.fortres.teslamirror`, reopen the app, Start.
+6. `adb shell am force-stop app.teslamirror`, reopen the app, Start.
 Expected: page reconnects by itself (hint shown while down), video returns without reload.
 
 - [ ] **Step 3: Fix anything found**, re-run the loop; keep fixes inside the owning files.

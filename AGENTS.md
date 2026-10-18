@@ -6,9 +6,10 @@ server: the phone runs a web server on its hotspot, the car's browser opens it.
 
 ## Status
 
-Design stage. No application code yet. See [docs/architecture.md](docs/architecture.md)
-for how it will work and [docs/superpowers/specs/](docs/superpowers/specs/) for the
-original design rationale and decisions.
+v1 runs on the emulator; car verification pending (docs/car-checklist.md).
+See [docs/architecture.md](docs/architecture.md) for how it works and
+[docs/superpowers/specs/](docs/superpowers/specs/) for the original design
+rationale and decisions.
 
 ## Golden rule
 
@@ -28,6 +29,7 @@ covers what you changed and it matters to the next reader, add it there.
 - Kotlin side is small by design; keep gesture and mapping logic free of
   Android framework dependencies so it stays unit-testable.
 - Web side is plain HTML/JS ES modules, no build step, no framework.
+- Web code: plain JS ES modules typed with JSDoc and checked by `tsc` (`cd web && npm run typecheck`), formatted with Prettier (`npm run format`). CSS: kebab-case classes, ids only as JS hooks, no tag selectors, no BEM. Kotlin: Android Studio formatter.
 - Targets Android 11+ (minSdk 30), stock OS, no root. Do not add
   root-only or Play-Store-only mechanisms.
 - Plans run subagent-driven with per-role models (Sonnet builds, Haiku
@@ -39,8 +41,8 @@ covers what you changed and it matters to the next reader, add it there.
 ```
 AGENTS.md            this file (CLAUDE.md imports it)
 .claude/             Claude Code project settings: permissions and the docs-check hook
-app/                 Android app, Kotlin, package com.fortres.teslamirror
-web/public/          page served to the Tesla browser (bundled as APK assets)
+app/                 Android app, Kotlin, package app.teslamirror
+web/public/          page served to the Tesla browser (bundled as classpath resources `public/**`)
 web/test/            node --test tests for the page modules
 tools/               dev scripts (synthetic touch sender, etc.)
 docs/                living documentation, see below
@@ -48,6 +50,7 @@ docs/                living documentation, see below
 
 ## Docs
 
+- [README.md](README.md) — human-facing overview, requirements, limitations.
 - [agent-workflow.md](docs/agent-workflow.md) — execution model, model routing, review moments.
 - [architecture.md](docs/architecture.md) — components, data flow, where each lives.
 - [protocol.md](docs/protocol.md) — WebSocket messages between page and phone.

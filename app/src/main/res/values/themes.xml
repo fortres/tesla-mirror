@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.TeslaMirror" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>
