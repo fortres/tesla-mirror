@@ -11,5 +11,5 @@ against the Tesla bookmark after a phone reboot ([device-setup.md](../device-set
 
 Candidates for v1.1:
 
-- mDNS name via `NsdManager` (needs a test in the Tesla browser).
+- A stable name instead of the address: see [no-mdns-in-v1](2026-10-18-no-mdns-in-v1.md).
 - A dedicated car Wi-Fi router with a DHCP reservation for the phone.

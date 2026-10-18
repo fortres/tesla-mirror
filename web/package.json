@@ -5,9 +5,12 @@
   "scripts": {
     "test": "node --test",
     "format": "prettier --write . ../tools ../.claude/settings.json",
-    "format:check": "prettier --check . ../tools ../.claude/settings.json"
+    "format:check": "prettier --check . ../tools ../.claude/settings.json",
+    "typecheck": "tsc -p ."
   },
   "devDependencies": {
-    "prettier": "3.9.10"
+    "@types/node": "22.20.5",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3"
   }
 }

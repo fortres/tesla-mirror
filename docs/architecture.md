@@ -38,12 +38,13 @@ everything else unchanged.
 | File | Responsibility |
 |------|----------------|
 | `index.html` | Video element, side panel, debug overlay. `user-scalable=no`. |
-| `style.css` | Full-viewport black layout, `touch-action: none`, side panel, debug overlay. |
+| `style.css` | Full-viewport black layout, `touch-action: none`, side panel, debug overlay. Tesla-like look from tokens on `:root`; plain kebab-case classes (no BEM), ids are JS hooks only and never styled, no tag selectors. |
 | `app.js` | Entry: wires WS, peer, touch, panel. |
 | `ws.js` | WebSocket with 1–5 s reconnect backoff; sends/receives protocol messages. |
 | `peer.js` | recvonly `RTCPeerConnection`; offer → answer → ICE; tears down and reconnects on `failed`/`disconnected`. |
 | `touch.js` | Pure helpers: video box, normalization to it (letterbox-aware; touches that start outside the box or on the side panel are ignored for their whole lifetime, others are clamped to the box), per-frame coalescing. Page re-sends the latest snapshot every 100 ms while a finger is down. |
 | `debug.js` | WS/ICE state, fps, bitrate from `getStats`, last touch events. |
+| `types.js` | JSDoc typedefs shared by the modules (messages, touch point, video box). |
 
 ## Gesture model
 
@@ -78,8 +79,9 @@ The phone can lie anywhere. The "Force landscape" switch in `MainActivity`
 (`OrientationLock`, needs the "Modify system settings" permission) turns
 auto-rotate off and sets the system user rotation to landscape, so every
 landscape-capable app renders horizontally. Capture follows the logical
-display, not the physical one: an app that supports landscape fills the view; a portrait-only app
-appears as a tall image centered with black bars, and touches still map 1:1.
+display, not the physical one: an app that supports landscape fills the view;
+a portrait-only app appears as a tall image centered with black bars, and
+touches still map 1:1.
 On a display size change `ScreenSource` restarts capture with the new size,
 `MirrorService` pushes a new `state`, and the page recomputes the video box
 from the video element's `resize` event.
@@ -93,7 +95,7 @@ from the video element's `resize` event.
   state every 2 s, and pushes `state` to the page on any change.
 - Whoever detects a failure reconnects: WS drop → page reconnects and
   re-offers (page shows "Reconnecting…" meanwhile); peer failed → page reconnects WS; capture stopped → server stays
-  up, page shows hint; accessibility off → page shows badge, touches ignored.
+  up, page shows hint; accessibility off → page shows a "No touch" badge, touches ignored.
 - Screen stays on via developer option "Stay awake while charging"; hotspot
   auto-off is disabled. See [device-setup.md](device-setup.md).
 

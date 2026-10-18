@@ -45,11 +45,13 @@ if you force-stop, re-enable it, see the checklist below).
 Delete that folder to go back to the bundled page. There is no in-app toggle.
 Not for the car phone.
 
-## Formatting
+## Formatting and types
 
 Web and tools code is formatted with Prettier (config in `.prettierrc`):
-`cd web && npm install && npm run format`. Run `npm run format:check` before
-committing. Kotlin follows the Android Studio default formatter and `.editorconfig`.
+`cd web && npm install && npm run format`. Run `npm run format:check` and
+`npm run typecheck` (`tsc`, strict `checkJs`) before committing. The page has
+no build step; types live in JSDoc (shared typedefs in `web/public/types.js`).
+Kotlin follows the Android Studio default formatter and `.editorconfig`.
 
 ## Tests
 

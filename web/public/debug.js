@@ -1,6 +1,12 @@
+/** @import { Point } from './types.js' */
+
+/** @param {HTMLElement} el */
 export function createDebug(el) {
+  /** @type {Record<string, string | number | boolean>} */
   const values = {};
+  /** @type {string[]} */
   const touches = [];
+  /** @type {ReturnType<typeof setInterval> | null} */
   let timer = null;
 
   function render() {
@@ -9,10 +15,15 @@ export function createDebug(el) {
   }
 
   return {
+    /**
+     * @param {string} key
+     * @param {string | number | boolean} value
+     */
     set(key, value) {
       values[key] = value;
       render();
     },
+    /** @param {Point[]} pts */
     touch(pts) {
       touches.push(JSON.stringify(pts));
       if (touches.length > 5) touches.shift();
@@ -22,8 +33,10 @@ export function createDebug(el) {
       if (timer) clearInterval(timer);
       timer = null;
     },
+    /** @param {RTCPeerConnection} pc */
     watch(pc) {
       this.unwatch();
+      /** @type {number | null} */
       let lastBytes = null;
       timer = setInterval(async () => {
         let stats;

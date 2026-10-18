@@ -24,16 +24,19 @@ running, capture started, hotspot on.
 9. Bluetooth: Waze voice, Telegram notification sound, an incoming call shown
    on the Tesla screen.
 10. Accessibility service stays enabled after the app is restarted; the page
-    shows no "Accessibility off" badge. If it is off, re-enable it per
+    shows no "No touch" badge. If it is off, re-enable it per
     [device-setup.md](device-setup.md) step 2.
 11. Turn the car off and on: hotspot reconnects, page recovers from the
     bookmark without re-pairing anything.
 
-12. Reboot the phone: compare the URL shown in the app with the bookmark.
+12. Reboot the phone twice: compare the full address shown in the app with the
+    bookmark each time, not only the third number.
 13. Rotation: switch Waze (landscape) to a portrait-only app and back; touch
     still lands in both.
-14. Bitrate cap: overlay kbps stays at or below ~4000 under motion.
-15. Known issue: a static phone screen shows no new frames; the page says
+14. Force landscape on: Waze renders horizontally while the phone lies
+    portrait; off: auto-rotate comes back.
+15. Bitrate cap: overlay kbps stays at or below ~4000 under motion.
+16. Known issue: a static phone screen shows no new frames; the page says
     "Waiting for first frame" until something moves.
 
 Record results in this file or an issue; update constants in `ScreenSource` if

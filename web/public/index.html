@@ -6,17 +6,44 @@
     <title>tesla-mirror</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <video id="video" autoplay muted playsinline></video>
-    <div id="hint">Tap Start on phone</div>
-    <nav id="panel">
-      <span id="a11y" hidden>Accessibility off</span>
-      <button data-key="back">&#9664;</button>
-      <button data-key="home">&#9679;</button>
-      <button data-key="recents">&#9632;</button>
-      <button id="debugToggle">i</button>
+  <body class="page">
+    <video id="video" class="video" autoplay muted playsinline></video>
+    <div id="hint" class="hint">
+      <div class="hint-title">Tap Start on phone</div>
+      <div class="hint-text" hidden></div>
+    </div>
+    <nav id="panel" class="panel">
+      <button class="panel-button" data-key="back" aria-label="Back">
+        <svg class="panel-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 5l-7 7 7 7" />
+        </svg>
+      </button>
+      <button class="panel-button" data-key="home" aria-label="Home">
+        <svg class="panel-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      </button>
+      <button class="panel-button" data-key="recents" aria-label="Recents">
+        <svg class="panel-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="8" width="13" height="13" rx="3" />
+          <path d="M8 4h10a3 3 0 0 1 3 3v10" />
+        </svg>
+      </button>
+      <button id="debugToggle" class="panel-button" aria-label="Debug overlay">
+        <svg class="panel-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 7l5 5-5 5" />
+          <path d="M12 18h7" />
+        </svg>
+      </button>
+      <span
+        id="a11y"
+        class="badge"
+        aria-label="Accessibility service is off: touches are not injected"
+        hidden
+        >No touch</span
+      >
     </nav>
-    <pre id="debug" hidden></pre>
+    <pre id="debug" class="debug" hidden></pre>
     <script type="module" src="app.js"></script>
   </body>
 </html>

@@ -30,7 +30,9 @@ test('snapshot keeps a tracked touch that left the box, clamped', () => {
   ]);
 });
 test('coalescer sends only the latest snapshot per frame', () => {
+  /** @type {import('../public/types.js').Point[][]} */
   const sent = [];
+  /** @type {(() => void) | undefined} */
   let pending;
   const c = createCoalescer(
     (p) => sent.push(p),
@@ -41,6 +43,7 @@ test('coalescer sends only the latest snapshot per frame', () => {
   c.push([{ id: 0, x: 0.1, y: 0.1 }]);
   c.push([{ id: 0, x: 0.2, y: 0.2 }]);
   assert.equal(sent.length, 0);
+  assert.ok(pending);
   pending();
   assert.deepEqual(sent, [[{ id: 0, x: 0.2, y: 0.2 }]]);
 });
