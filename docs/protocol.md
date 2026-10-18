@@ -9,7 +9,7 @@ time; a new connection closes the previous one.
 |---------|--------|-------|
 | `offer` | `sdp` | SDP offer from a recvonly `RTCPeerConnection`. |
 | `ice` | `candidate` | `RTCIceCandidate.toJSON()`. |
-| `touch` | `pts: [{id, x, y}]` | Snapshot of all active fingers. `x,y` in 0..1 relative to the rendered video box. Empty `pts` = all fingers up. Max one message per animation frame. |
+| `touch` | `pts: [{id, x, y}]` | Snapshot of all active fingers. `x,y` in 0..1 relative to the rendered video box. Empty `pts` = all fingers up. Max one message per animation frame; while fingers are down the page repeats the latest snapshot at least every 100 ms, and the phone releases all fingers after 500 ms without a snapshot. |
 | `key` | `k` | `back`, `home` or `recents`. |
 
 ```json

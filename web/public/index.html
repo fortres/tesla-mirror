@@ -2,7 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>tesla-mirror</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body></body>
+<body>
+<video id="video" autoplay muted playsinline></video>
+<div id="hint">Tap Start on phone</div>
+<nav id="panel">
+  <span id="a11y" hidden>Accessibility off</span>
+  <button data-key="back">&#9664;</button>
+  <button data-key="home">&#9679;</button>
+  <button data-key="recents">&#9632;</button>
+  <button id="debugToggle">i</button>
+</nav>
+<pre id="debug" hidden></pre>
+<script type="module" src="app.js"></script>
+</body>
 </html>

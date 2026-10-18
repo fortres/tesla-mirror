@@ -36,11 +36,12 @@ everything else unchanged.
 
 | File | Responsibility |
 |------|----------------|
-| `index.html` | Video element, side panel, debug overlay. `user-scalable=no`, `touch-action: none`. |
+| `index.html` | Video element, side panel, debug overlay. `user-scalable=no`. |
+| `style.css` | Full-viewport black layout, `touch-action: none`, side panel, debug overlay. |
 | `app.js` | Entry: wires WS, peer, touch, panel. |
 | `ws.js` | WebSocket with 1–5 s reconnect backoff; sends/receives protocol messages. |
 | `peer.js` | recvonly `RTCPeerConnection`; offer → answer → ICE; tears down and reconnects on `failed`/`disconnected`. |
-| `touch.js` | Touch capture, normalization to the rendered video box (letterbox-aware), one move message per animation frame. |
+| `touch.js` | Pure helpers: video box, normalization to it (letterbox-aware; touches that start outside the box or on the side panel are ignored for their whole lifetime, others are clamped to the box), per-frame coalescing. Page re-sends the latest snapshot every 100 ms while a finger is down. |
 | `debug.js` | WS/ICE state, fps, bitrate from `getStats`, last touch events. |
 
 ## Gesture model
