@@ -10,6 +10,13 @@ Design stage. No application code yet. See [docs/architecture.md](docs/architect
 for how it will work and [docs/superpowers/specs/](docs/superpowers/specs/) for the
 original design rationale and decisions.
 
+## Golden rule
+
+Code and docs change together. If you change a module's behavior, logic,
+protocol, layout or setup steps, update the doc that describes it in the same
+piece of work. Check the relevant file in `docs/` before you finish; if no doc
+covers what you changed and it matters to the next reader, add it there.
+
 ## Rules
 
 - Everything in the repo is English: docs, commits, comments, identifiers.
