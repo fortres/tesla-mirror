@@ -11,8 +11,12 @@
  *   capturing: boolean,
  *   accessibility: boolean,
  *   capture: { w: number, h: number },
+ *   transport?: Transport,
+ *   touch?: boolean,
  * }} StateMsg
  */
+
+/** @typedef {'webrtc'|'h264ws'} Transport */
 
 /** @typedef {{ t: 'answer', sdp: string }} AnswerMsg */
 
