@@ -32,8 +32,8 @@ function mustQuery(parent, selector) {
 
 /** @type {HTMLVideoElement} */
 const video = must('video');
-/** @type {HTMLCanvasElement} */
-const canvas = must('canvas');
+/** @type {HTMLVideoElement} */
+const stream = must('stream');
 /** @type {HTMLElement} */
 const hint = must('hint');
 /** @type {HTMLElement} */
@@ -64,10 +64,11 @@ let peerGen = 0;
 /** @type {ReturnType<typeof startH264> | null} */
 let h264 = null;
 let h264Gen = 0;
-let h264Pending = false;
-/** @type {Promise<boolean> | null} */
-let decoderSupported = null;
+/** @type {ReturnType<typeof setInterval> | null} */
+let latencyTimer = null;
 let touchEnabled = true;
+/** @type {boolean | null} */
+let decoderSupported = null;
 /** @type {Set<number>} */
 const startedInside = new Set();
 /** @type {Set<number>} */
@@ -137,39 +138,34 @@ function beginPeer() {
 
 function closeH264() {
   h264Gen++;
-  h264Pending = false;
+  if (latencyTimer) clearInterval(latencyTimer);
+  latencyTimer = null;
   if (h264) {
     h264.close();
     h264 = null;
   }
 }
 
-async function beginH264() {
+/** @param {StateMsg['capture']} size */
+function beginH264(size) {
   const gen = ++h264Gen;
-  h264Pending = true;
   setHint('Waiting for first frame', 'Move something on the phone');
-  decoderSupported ??= h264Supported().then((ok) => {
-    debug.set('decoder', ok ? 'yes' : 'no');
-    return ok;
-  });
-  if (!(await decoderSupported)) {
-    if (gen === h264Gen)
-      setHint('Browser cannot decode H.264', 'Use the Android phone or update the car');
-    return;
-  }
-  if (gen !== h264Gen) return;
   h264 = startH264({
-    canvas,
+    video: stream,
+    size,
     onFirstFrame: () => {
       if (gen === h264Gen) setHint(null);
     },
     onStat: (stat) => {
       if (gen !== h264Gen) return;
-      if (stat.error !== undefined) debug.set('error', stat.error);
-      if (stat.dropped !== undefined) debug.set('dropped', stat.dropped);
-      if (stat.decoded !== undefined) debug.set('decoded', stat.decoded);
+      debug.set('dropped', stat.dropped);
+      debug.set('decoded', stat.decoded);
     },
   });
+  latencyTimer = setInterval(() => {
+    const b = stream.buffered;
+    if (b.length > 0) debug.set('latency', (b.end(b.length - 1) - stream.currentTime).toFixed(2));
+  }, 1000);
 }
 
 /** @param {StateMsg} msg */
@@ -177,7 +173,12 @@ function onState(msg) {
   const { transport, touch } = transportOf(msg);
   const h264ws = transport === 'h264ws';
   touchEnabled = touch;
-  canvas.hidden = !h264ws;
+  if (!touch) {
+    if (heartbeat) clearInterval(heartbeat);
+    heartbeat = null;
+    latestPts = [];
+  }
+  stream.hidden = !h264ws;
   video.hidden = h264ws;
   keyButtons.forEach((b) => (b.hidden = !touch));
   if (!msg.capturing) setHint(WAITING_HINT);
@@ -188,8 +189,14 @@ function onState(msg) {
   debug.set('capturing', msg.capturing);
   if (h264ws) {
     if (peer) closePeer();
-    if (msg.capturing && !h264 && !h264Pending) beginH264();
-    else if (!msg.capturing) closeH264();
+    if (decoderSupported === null) {
+      decoderSupported = h264Supported();
+      debug.set('decoder', decoderSupported ? 'yes' : 'no');
+    }
+    if (!msg.capturing) closeH264();
+    else if (!decoderSupported)
+      setHint('Browser cannot play the iPhone stream', 'Use the Android phone or update the car');
+    else if (!h264) beginH264(msg.capture);
     return;
   }
   closeH264();

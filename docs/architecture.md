@@ -37,7 +37,7 @@ everything else unchanged.
 
 | File | Responsibility |
 |------|----------------|
-| `index.html` | Video element, side panel, debug overlay. `user-scalable=no`. |
+| `index.html` | Two video elements (`#video` for WebRTC, `#stream` for H.264, one shown at a time), side panel, debug overlay. `user-scalable=no`. |
 | `style.css` | Full-viewport black layout, `touch-action: none`, side panel, debug overlay. Tesla-like look from tokens on `:root`; plain kebab-case classes (no BEM), ids are JS hooks only and never styled, no tag selectors. |
 | `app.js` | Entry: wires WS, peer, touch, panel. |
 | `ws.js` | WebSocket with 1–5 s reconnect backoff; sends/receives protocol messages; binary messages go to `onBinary`. |
@@ -45,13 +45,16 @@ everything else unchanged.
 | `touch.js` | Pure helpers: video box, normalization to it (letterbox-aware; touches that start outside the box or on the side panel are ignored for their whole lifetime, others are clamped to the box), per-frame coalescing. Page re-sends the latest snapshot every 100 ms while a finger is down. |
 | `caps.js` | Pure. `transportOf(state)` → `{transport, touch}`; missing fields mean `webrtc` / `true` (older Android phones). |
 | `frame.js` | Pure. `parseFrame` for the 16-byte binary header, `createKeyGate` (start only on a keyframe, re-arm on decoder backlog). |
-| `h264.js` | `h264ws` playback: WebCodecs `VideoDecoder` (`avc1.4D401F`, Annex B) drawing into `#canvas`; `h264Supported()` probes the browser. A decoder error replaces the decoder and waits for the next keyframe. |
+| `fmp4.js` | Pure. Annex B → NAL split, codec string from the SPS, fragmented-MP4 init and media segment boxes. |
+| `h264.js` | `h264ws` playback: parse frames, gate on keyframes, mux to fMP4 and append to a MediaSource on `#stream`; stays near the live edge, trims old buffer, rebuilds on SPS change or append error. `h264Supported()` checks `MediaSource.isTypeSupported`. |
 | `debug.js` | WS/ICE state, fps, bitrate from `getStats`, last touch events. |
 | `types.js` | JSDoc typedefs shared by the modules (messages, touch point, video box). |
 
 The `state` message picks the transport. `webrtc` (Android) plays the `<video>`
-track as above. `h264ws` (iOS) shows `#canvas` instead, sends no `offer`, and
-decodes the binary frames from the socket. `touch: false` makes the page
+track as above. `h264ws` (iOS) shows `#stream` instead, sends no `offer`, and
+plays the binary frames from the socket through Media Source Extensions, muxing
+them to fragmented MP4 in the page. WebCodecs is not used: it exists only in
+secure contexts and the page is plain http on a LAN address. `touch: false` makes the page
 ignore touches and hide the Back/Home/Recents buttons and the accessibility
 badge; the debug button stays. See [protocol.md](protocol.md).
 
