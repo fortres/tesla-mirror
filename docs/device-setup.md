@@ -19,5 +19,6 @@ mounted landscape).
 9. In the Tesla: connect Wi-Fi to the phone's hotspot, open the browser at the
    URL shown in the app (typically `http://192.168.43.1:8080`), bookmark it.
 
-After a phone reboot only step 8 repeats: Android 11 cannot grant screen
-capture without a tap.
+After a phone reboot the service starts itself (the web page is already
+reachable) and its notification opens the app. Only step 8 repeats: Android 11
+cannot grant screen capture without a tap.

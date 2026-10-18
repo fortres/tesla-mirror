@@ -28,14 +28,15 @@ than on a real phone. That is fine for development.
 
 ## Dev mode for the web page
 
-The server can serve the page from a folder on the device instead of APK
-assets, so the page can be iterated without rebuilding:
+The server serves the page from a folder on the device instead of APK assets
+when that folder exists, so the page can be iterated without rebuilding:
 
 ```
-adb push web/public /sdcard/tesla-mirror/web
+adb push web/public/. /sdcard/Android/data/com.fortres.teslamirror/files/web/
 ```
 
-Then enable "Serve from /sdcard" in the app. Not for the car phone.
+Delete that folder to go back to the bundled page. There is no in-app toggle.
+Not for the car phone.
 
 ## Tests
 

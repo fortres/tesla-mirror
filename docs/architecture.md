@@ -19,14 +19,14 @@ hotspot is the only network; nothing leaves the LAN.
 
 | Component | File | Responsibility |
 |-----------|------|----------------|
-| MirrorService | `MirrorService.kt` | Foreground service (`mediaProjection` type). Starts/stops server, capture, peer. |
+| MirrorService | `MirrorService.kt` | Foreground service (`specialUse` while serving, `mediaProjection` once capturing). Starts the server on boot/app open; starts/stops capture and peer on a single worker thread; publishes `MirrorState` and pushes `state` to the page. |
 | ScreenSource | `video/ScreenSource.kt` | Wraps libwebrtc `ScreenCapturerAndroid`; video track from the MediaProjection grant. Half-scale capture, 30 fps, 4 Mbit/s cap. |
 | PeerManager | `video/PeerManager.kt` | One `PeerConnection`, answers the browser's offer, relays ICE over WS. Host candidates only, no STUN/TURN. |
 | WebServer | `net/WebServer.kt` | HTTP :8080 serving `web/public` from classpath resources (`public/**`); WebSocket `/ws`. One client: a new connection closes the previous one. |
 | InputService | `input/InputService.kt` | `AccessibilityService`. Normalized touch → display pixels (rotation-aware) → `dispatchGesture`. Back/Home/Recents via `performGlobalAction`. |
 | GestureStreamer | `input/GestureStreamer.kt` | Pure Kotlin. Finger snapshots → stroke segments every ~20 ms, `continueStroke` for ongoing fingers. Unit-tested. |
-| MainActivity | `MainActivity.kt` | Status, server URL, Start (MediaProjection consent), link to accessibility settings. |
-| BootReceiver | `BootReceiver.kt` | Opens MainActivity after boot so one tap on Start is all that is needed. |
+| MainActivity | `MainActivity.kt` | Status (collects `MirrorState`), server URL, Start (MediaProjection consent), Stop, link to accessibility settings. |
+| BootReceiver | `BootReceiver.kt` | Starts MirrorService after boot; its notification opens MainActivity ([decision](decisions/2026-10-18-boot-starts-service.md)). |
 
 Video transport is isolated behind `ScreenSource` + `PeerManager`. If the Tesla
 browser cannot play WebRTC, plan B is MJPEG over the same WebSocket with
@@ -71,8 +71,11 @@ from the video element's `resize` event.
 
 ## Startup and recovery
 
-- Boot → BootReceiver → MainActivity → MirrorService. Server is up before
+- Boot → BootReceiver → MirrorService (serving). The notification opens
+  MainActivity, where one tap on Start begins capture. The server is up before
   capture; the page shows "Tap Start on phone" until capture starts.
+- The service re-reads the hotspot address every 10 s and the accessibility
+  state every 2 s, and pushes `state` to the page on any change.
 - Whoever detects a failure reconnects: WS drop → page reconnects and
   re-offers; peer failed → page reconnects WS; capture stopped → server stays
   up, page shows hint; accessibility off → page shows badge, touches ignored.
