@@ -67,6 +67,28 @@ Kotlin follows the Android Studio default formatter and `.editorconfig`.
   default `localhost:8080`) connects to `/ws` and sends a tap to confirm
   injection reaches the emulator. Exit codes: 0 sent, 1 cannot connect (5 s) or closed before the release, 2 bad arguments.
 
+## Page without a phone (iOS path)
+
+`tools/fake-ios.mjs` plays the iPhone: it serves `web/public/` and `/health` and
+streams an Annex B H.264 file as `h264ws` binary frames at 30 fps, looping. A new
+client gets `state`, then frames starting at the next keyframe; the newest client
+wins. No ffmpeg needed on the host:
+
+```
+docker run --rm -v "$PWD":/out jrottenberg/ffmpeg:7.1-ubuntu \
+  -f lavfi -i testsrc2=size=640x1280:rate=30 -t 10 -c:v libx264 -profile:v main -bf 0 -g 60 \
+  -x264-params aud=1:repeat-headers=1 -bsf:v h264_mp4toannexb -f h264 /out/fixture.h264
+cd web && npm install && cd ..
+node tools/fake-ios.mjs fixture.h264 [port=8080] [--size 640x1280] [--sparse]
+```
+
+The stream must carry AUD NAL units (`aud=1` above); the tool splits access units at them.
+
+`--sparse` sends one frame every 2 s after the first 3 s, like a static iPhone
+screen. Open `http://localhost:8080` in Chrome: the overlay (debug button) shows
+`transport: h264ws`, `decoder: yes`, growing `appended`, `latency` under 0.5 s;
+only the debug button is in the panel. Reloading or reconnecting resumes within 2 s.
+
 ## Headless end-to-end
 
 Headless Chrome (`google-chrome --headless=new --remote-debugging-port=9222
