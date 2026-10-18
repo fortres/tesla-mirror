@@ -4,7 +4,7 @@ Mirror a dedicated in-car Android phone into the Tesla browser and control it by
 
 ## What it does
 
-- Shows the phone screen in the Tesla Model 3 browser over the phone's hotspot.
+- Shows the phone screen in the Tesla browser over the phone's hotspot.
 - Sends touches, multi-finger gestures and Back/Home/Recents from the Tesla screen back to the phone.
 - Runs fully on the phone: no external server, nothing leaves the LAN.
 - "Force landscape" switch makes landscape-capable apps fill the Tesla screen, however the phone lies.
@@ -24,7 +24,7 @@ v1: verified end to end on an Android 11 emulator; first car test pending, see
 ## Requirements
 
 - Android 11+ phone.
-- Tesla Model 3 2021+ with the browser usable while driving.
+- Tesla with the browser usable while driving.
 - Android Studio, or Gradle + JDK 17.
 - Node 22 for web tests.
 
