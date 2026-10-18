@@ -4,6 +4,8 @@ import MirrorCore
 /// Applies the drop policy and packs encoded frames for the socket. Pipeline queue only.
 final class FramePump {
     var encoder: H264Encoder
+    /// Called after a drop forced a keyframe request.
+    var onKeyframeRequested: (() -> Void)?
 
     private let server: WebServer
     private var policy = DropPolicy()
@@ -27,6 +29,7 @@ final class FramePump {
             return
         case .dropAndRequestKey:
             encoder.requestKeyframe()
+            onKeyframeRequested?()
             return
         case .send:
             if awaitingKey { return }

@@ -3,11 +3,12 @@ import Foundation
 import os
 import ReplayKit
 
+let broadcastLog = Logger(subsystem: "app.teslamirror.ios", category: "broadcast")
+
 class SampleHandler: RPBroadcastSampleHandler {
     private static let maxPendingBuffers = 2
 
     private let queue = DispatchQueue(label: "app.teslamirror.ios.pipeline")
-    private let log = Logger(subsystem: "app.teslamirror.ios", category: "broadcast")
     private let pendingLock = NSLock()
     private var pending = 0
     private var memoryPressure: DispatchSourceMemoryPressure?
@@ -20,14 +21,13 @@ class SampleHandler: RPBroadcastSampleHandler {
 
     override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
         guard let publicDir = Bundle.main.url(forResource: "public", withExtension: nil) else {
-            finishBroadcastWithError(NSError(domain: "app.teslamirror.ios", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Bundled page is missing"
-            ]))
+            finishBroadcastWithError(Self.error("Bundled page is missing"))
             return
         }
-        let server = WebServer(publicDir: publicDir)
+        let server = WebServer(publicDir: publicDir, queue: queue)
         server.onClientConnected = { [weak self] in
-            self?.queue.async { self?.pump?.clientConnected() }
+            self?.pump?.clientConnected()
+            self?.repeatLastSoon()
         }
         do {
             try server.start()
@@ -40,7 +40,7 @@ class SampleHandler: RPBroadcastSampleHandler {
             self.source = FrameSource { [weak self] buffer, pts in self?.encode(buffer, pts) }
         }
         let pressure = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: queue)
-        pressure.setEventHandler { [log] in log.warning("Memory pressure on broadcast extension") }
+        pressure.setEventHandler { broadcastLog.warning("Memory pressure on broadcast extension") }
         pressure.resume()
         memoryPressure = pressure
     }
@@ -57,6 +57,7 @@ class SampleHandler: RPBroadcastSampleHandler {
             self.server?.capturing = true
             self.server?.sendState()
             self.pump?.encoder.requestKeyframe()
+            self.repeatLastSoon()
         }
     }
 
@@ -88,18 +89,37 @@ class SampleHandler: RPBroadcastSampleHandler {
         }
     }
 
+    private static func error(_ message: String) -> NSError {
+        NSError(domain: "app.teslamirror.ios", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+
+    /// ReplayKit sends nothing while the screen is static; re-emit the last picture so a keyframe can go out.
+    private func repeatLastSoon() {
+        guard let source else { return }
+        let count = source.inputCount
+        queue.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let source = self?.source, source.inputCount == count else { return }
+            source.repeatLast()
+        }
+    }
+
     private func encode(_ buffer: CVPixelBuffer, _ pts: CMTime) {
-        guard let server, let source else { return }
+        guard let server, let source, server.capturing else { return }
         if source.outputSize != encoderSize || pump == nil {
             pump?.encoder.invalidate()
             let size = source.outputSize
-            let encoder = H264Encoder(width: size.w, height: size.h) { [weak self] isKey, ptsUs, bytes in
-                self?.queue.async { self?.pump?.push(isKey: isKey, ptsUs: ptsUs, annexB: bytes) }
-            }
+            let encoder = H264Encoder(
+                width: size.w, height: size.h,
+                onFailure: { [weak self] in self?.finishBroadcastWithError(Self.error("Encoder could not start")) },
+                onFrame: { [weak self] isKey, ptsUs, bytes in
+                    self?.queue.async { self?.pump?.push(isKey: isKey, ptsUs: ptsUs, annexB: bytes) }
+                })
             if let pump {
                 pump.encoder = encoder
             } else {
-                pump = FramePump(server: server, encoder: encoder)
+                let pump = FramePump(server: server, encoder: encoder)
+                pump.onKeyframeRequested = { [weak self] in self?.repeatLastSoon() }
+                self.pump = pump
             }
             encoderSize = size
             server.captureSize = size
