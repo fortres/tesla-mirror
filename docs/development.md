@@ -8,6 +8,10 @@ Everything except Tesla-browser quirks can be developed and tested on a laptop.
 - JDK 17 on the machine: the build pins `jvmToolchain(17)` and does not download a toolchain.
 - Node 22+ for web tests and dev scripts (built-in WebSocket).
 
+The build itself is host-independent (libwebrtc ships prebuilt for every
+phone ABI); it works on Linux, macOS (Intel or Apple silicon) and Windows.
+On Apple silicon use the `arm64-v8a` emulator image instead of `x86_64`.
+
 ```
 sdkmanager "system-images;android-30;google_apis;x86_64"
 avdmanager create avd -n tesla-mirror -k "system-images;android-30;google_apis;x86_64" -d pixel_2_xl
