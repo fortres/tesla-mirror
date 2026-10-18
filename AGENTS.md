@@ -41,7 +41,7 @@ covers what you changed and it matters to the next reader, add it there.
 ```
 AGENTS.md            this file (CLAUDE.md imports it)
 .claude/             Claude Code project settings: permissions and the docs-check hook
-app/                 Android app, Kotlin, package com.fortres.teslamirror
+app/                 Android app, Kotlin, package app.teslamirror
 web/public/          page served to the Tesla browser (bundled as classpath resources `public/**`)
 web/test/            node --test tests for the page modules
 tools/               dev scripts (synthetic touch sender, etc.)

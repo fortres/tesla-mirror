@@ -15,7 +15,7 @@ hotspot is the only network; nothing leaves the LAN.
                                          └─────────────────────────────────┘
 ```
 
-## Phone components (`app/src/main/java/com/fortres/teslamirror/`)
+## Phone components (`app/src/main/java/app/teslamirror/`)
 
 | Component | File | Responsibility |
 |-----------|------|----------------|

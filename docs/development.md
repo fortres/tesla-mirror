@@ -36,7 +36,7 @@ The server serves the page from a folder on the device instead of classpath reso
 when that folder exists, so the page can be iterated without rebuilding:
 
 ```
-adb push web/public/. /sdcard/Android/data/com.fortres.teslamirror/files/web/
+adb push web/public/. /sdcard/Android/data/app.teslamirror/files/web/
 ```
 
 The folder is checked once at server start, so restart the app process after
@@ -82,7 +82,7 @@ the phone's UDP, so rewrite its `10.0.2.x` ICE candidates to `127.0.0.1` and run
 - Back/Home/Recents buttons work.
 - Kill the app: page shows reconnecting, recovers after restart without reload.
   Force-stop disables the accessibility service; re-enable it with
-  `adb shell settings put secure enabled_accessibility_services com.fortres.teslamirror/com.fortres.teslamirror.input.InputService; adb shell settings put secure accessibility_enabled 1`.
+  `adb shell settings put secure enabled_accessibility_services app.teslamirror/app.teslamirror.input.InputService; adb shell settings put secure accessibility_enabled 1`.
 - Debug overlay shows fps, bitrate, ICE state, last touches.
 
 Real-car verification is a separate trip: [car-checklist.md](car-checklist.md).

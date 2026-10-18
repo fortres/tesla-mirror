@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.fortres.teslamirror"
+    namespace = "app.teslamirror"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.fortres.teslamirror"
+        applicationId = "app.teslamirror"
         minSdk = 30
         targetSdk = 34
         versionCode = 1
