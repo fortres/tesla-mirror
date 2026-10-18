@@ -12,3 +12,4 @@ node_modules/
 .history/
 ios/*.xcodeproj/
 ios/build/
+ios/MirrorCore/.build/
