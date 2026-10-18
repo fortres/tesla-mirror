@@ -15,8 +15,9 @@ It can lie anywhere; no landscape mount is needed.
    phone or forward the main number to it if calls are needed.
 7. Sign in to Waze, Telegram, YouTube on the phone. Open the app and turn on
    "Force landscape" (grant "Modify system settings" once, then flip the switch
-   again). Apps that only support portrait still show as a tall image in the
-   middle of the Tesla screen; that is expected.
+   again). It is a system setting, so it stays on across app restarts and
+   reboots until you switch it off. Apps that only support portrait still show
+   as a tall image in the middle of the Tesla screen; that is expected.
 8. Open the app, tap Start, accept screen capture.
 9. In the Tesla: connect Wi-Fi to the phone's hotspot, open the browser at the
    URL shown in the app (`http://<phone-ip>:8080`), bookmark it. Re-check it after
