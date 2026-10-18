@@ -1,12 +1,16 @@
+const NEGOTIATION_TIMEOUT_MS = 15000;
+
 export function startPeer({ send, onTrack, onFailed, onState }) {
   const pc = new RTCPeerConnection({ iceServers: [] });
   const queued = [];
   let remoteSet = false;
   let done = false;
+  const timer = setTimeout(() => fail(), NEGOTIATION_TIMEOUT_MS);
 
   function fail() {
     if (done) return;
     done = true;
+    clearTimeout(timer);
     onFailed();
   }
 
@@ -17,6 +21,7 @@ export function startPeer({ send, onTrack, onFailed, onState }) {
   };
   pc.onconnectionstatechange = () => {
     onState('pc', pc.connectionState);
+    if (pc.connectionState === 'connected') clearTimeout(timer);
     if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) fail();
   };
   pc.oniceconnectionstatechange = () => onState('ice', pc.iceConnectionState);
@@ -41,6 +46,7 @@ export function startPeer({ send, onTrack, onFailed, onState }) {
     },
     close() {
       done = true;
+      clearTimeout(timer);
       pc.close();
     },
   };

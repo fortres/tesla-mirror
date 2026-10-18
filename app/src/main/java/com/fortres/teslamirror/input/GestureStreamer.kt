@@ -31,9 +31,11 @@ class GestureStreamer(
     }
 
     private val fingers = LinkedHashMap<Int, FingerState>()
+    // Released fingers whose id was pressed again before their final segment was emitted.
+    private val releasing = ArrayList<Pair<Int, FingerState>>()
     private var lastSnapshotMs = 0L
 
-    val hasFingers: Boolean get() = fingers.isNotEmpty()
+    val hasFingers: Boolean get() = fingers.isNotEmpty() || releasing.isNotEmpty()
 
     fun onSnapshot(fingers: List<Finger>, nowMs: Long) {
         lastSnapshotMs = nowMs
@@ -42,6 +44,9 @@ class GestureStreamer(
         for (f in fingers) {
             val state = this.fingers[f.id]
             if (state == null) {
+                this.fingers[f.id] = FingerState(f.x, f.y, f.x, f.y, nowMs)
+            } else if (!state.down) {
+                releasing += f.id to state
                 this.fingers[f.id] = FingerState(f.x, f.y, f.x, f.y, nowMs)
             } else {
                 state.targetX = f.x
@@ -55,27 +60,42 @@ class GestureStreamer(
         fingers.values.forEach { it.down = false }
     }
 
+    fun restartStrokes(nowMs: Long) {
+        for (s in fingers.values) {
+            s.started = false
+            s.strokeStartMs = nowMs
+        }
+    }
+
     fun nextBatch(nowMs: Long): List<Segment> {
         if (fingers.values.any { it.down } && nowMs - lastSnapshotMs > watchdogMs) releaseAll()
-        val batch = ArrayList<Segment>(fingers.size)
+        val batch = ArrayList<Segment>(fingers.size + releasing.size)
+        for ((id, s) in releasing) batch += emit(id, s, nowMs)
+        releasing.clear()
         val iter = fingers.entries.iterator()
         while (iter.hasNext()) {
             val (id, s) = iter.next()
-            val cut = s.down && nowMs - s.strokeStartMs >= maxStrokeMs
-            val willContinue = s.down && !cut
-            val tap = !s.started && !s.down
-            batch += Segment(
-                id = id,
-                fromX = s.curX, fromY = s.curY, toX = s.targetX, toY = s.targetY,
-                durationMs = if (tap) tapMs else segmentMs,
-                willContinue = willContinue,
-                isNew = !s.started,
-            )
-            s.curX = s.targetX
-            s.curY = s.targetY
-            s.started = willContinue
-            if (!s.down) iter.remove() else if (cut) s.strokeStartMs = nowMs
+            batch += emit(id, s, nowMs)
+            if (!s.down) iter.remove()
         }
         return batch
+    }
+
+    private fun emit(id: Int, s: FingerState, nowMs: Long): Segment {
+        val cut = s.down && nowMs - s.strokeStartMs >= maxStrokeMs
+        val willContinue = s.down && !cut
+        val tap = !s.started && !s.down
+        val seg = Segment(
+            id = id,
+            fromX = s.curX, fromY = s.curY, toX = s.targetX, toY = s.targetY,
+            durationMs = if (tap) tapMs else segmentMs,
+            willContinue = willContinue,
+            isNew = !s.started,
+        )
+        s.curX = s.targetX
+        s.curY = s.targetY
+        s.started = willContinue
+        if (cut) s.strokeStartMs = nowMs
+        return seg
     }
 }

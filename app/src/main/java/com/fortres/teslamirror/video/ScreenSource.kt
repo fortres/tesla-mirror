@@ -60,7 +60,7 @@ class ScreenSource(
 
     fun start() {
         capturer.startCapture(width, height, FPS)
-        displayManager.registerDisplayListener(listener, Handler(Looper.getMainLooper()))
+        displayManager.registerDisplayListener(listener, Handler(Looper.myLooper() ?: Looper.getMainLooper()))
     }
 
     fun onDisplayChanged() {

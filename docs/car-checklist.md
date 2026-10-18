@@ -28,5 +28,12 @@ running, capture started, hotspot on.
 11. Turn the car off and on: hotspot reconnects, page recovers from the
     bookmark without re-pairing anything.
 
+12. Reboot the phone: compare the URL shown in the app with the bookmark.
+13. Rotation: switch Waze (landscape) to a portrait-only app and back; touch
+    still lands in both.
+14. Bitrate cap: overlay kbps stays at or below ~4000 under motion.
+15. Known issue: a static phone screen shows no new frames; the page says
+    "Waiting for first frame" until something moves.
+
 Record results in this file or an issue; update constants in `ScreenSource` if
 bitrate or resolution needs tuning.

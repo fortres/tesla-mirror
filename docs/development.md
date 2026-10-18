@@ -30,19 +30,22 @@ than on a real phone. That is fine for development.
 
 ## Dev mode for the web page
 
-The server serves the page from a folder on the device instead of APK assets
+The server serves the page from a folder on the device instead of classpath resources
 when that folder exists, so the page can be iterated without rebuilding:
 
 ```
 adb push web/public/. /sdcard/Android/data/com.fortres.teslamirror/files/web/
 ```
 
+The folder is checked once at server start, so restart the app process after
+pushing it (not by force-stop, which also disables the accessibility service;
+if you force-stop, re-enable it, see the checklist below).
 Delete that folder to go back to the bundled page. There is no in-app toggle.
 Not for the car phone.
 
 ## Tests
 
-- Kotlin: `./gradlew test`. Covers coordinate mapping with rotation,
+- Kotlin: `./gradlew test`. Covers coordinate mapping and clamping,
   `GestureStreamer` snapshot → segments, message parsing.
 - Web: `cd web && node --test`. Covers normalization with letterbox and touch
   coalescing. The same ES modules run in the browser and in node.
@@ -68,6 +71,8 @@ the phone's UDP, so rewrite its `10.0.2.x` ICE candidates to `127.0.0.1` and run
 - Tap, swipe, long press, pinch in DevTools device mode act on the emulator.
 - Back/Home/Recents buttons work.
 - Kill the app: page shows reconnecting, recovers after restart without reload.
+  Force-stop disables the accessibility service; re-enable it with
+  `adb shell settings put secure enabled_accessibility_services com.fortres.teslamirror/com.fortres.teslamirror.input.InputService; adb shell settings put secure accessibility_enabled 1`.
 - Debug overlay shows fps, bitrate, ICE state, last touches.
 
 Real-car verification is a separate trip: [car-checklist.md](car-checklist.md).

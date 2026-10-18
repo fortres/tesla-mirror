@@ -39,8 +39,13 @@ class GestureStreamerTest {
     @Test fun strokeIsSplitBeforeMaxDuration() {
         val s = GestureStreamer(maxStrokeMs = 100)
         s.onSnapshot(listOf(f(0, 0f, 0f)), 0); s.nextBatch(0)
-        assertEquals(false, s.nextBatch(150).single().willContinue)
-        assertEquals(true, s.nextBatch(170).single().isNew)
+        s.onSnapshot(listOf(f(0, 5f, 5f)), 140)
+        val cut = s.nextBatch(150).single()
+        assertEquals(false, cut.willContinue)
+        val restarted = s.nextBatch(170).single()
+        assertEquals(true, restarted.isNew)
+        assertEquals(cut.toX, restarted.fromX, 0f)
+        assertEquals(cut.toY, restarted.fromY, 0f)
         assertTrue(s.hasFingers)
     }
     @Test fun reusedIdAfterReleaseIsNewStroke() {
@@ -61,5 +66,21 @@ class GestureStreamerTest {
         s.onSnapshot(listOf(f(0, 0f, 0f), f(1, 1f, 1f)), 0); s.nextBatch(0)
         s.releaseAll()
         assertTrue(s.nextBatch(20).all { !it.willContinue }); assertFalse(s.hasFingers)
+    }
+    @Test fun restartStrokesStartsNewStrokesAtCurrentPoint() {
+        val s = GestureStreamer()
+        s.onSnapshot(listOf(f(0, 10f, 10f)), 0); s.nextBatch(0)
+        s.restartStrokes(20)
+        val seg = s.nextBatch(20).single()
+        assertTrue(seg.isNew); assertEquals(10f, seg.fromX, 0f); assertTrue(seg.willContinue)
+    }
+    @Test fun reusedIdWithinOneTickReleasesThenStartsNew() {
+        val s = GestureStreamer()
+        s.onSnapshot(listOf(f(0, 0f, 0f)), 0); s.nextBatch(0)
+        s.onSnapshot(emptyList(), 10)
+        s.onSnapshot(listOf(f(0, 50f, 50f)), 15)
+        val (end, start) = s.nextBatch(20)
+        assertEquals(0, end.id); assertFalse(end.willContinue); assertEquals(0f, end.toX, 0f)
+        assertEquals(0, start.id); assertTrue(start.isNew); assertEquals(50f, start.fromX, 0f)
     }
 }

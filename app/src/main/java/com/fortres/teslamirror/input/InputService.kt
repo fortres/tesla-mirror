@@ -5,6 +5,7 @@ import android.accessibilityservice.GestureDescription
 import android.accessibilityservice.GestureDescription.StrokeDescription
 import android.content.Intent
 import android.graphics.Path
+import android.graphics.PointF
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -17,11 +18,16 @@ class InputService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     private val streamer = GestureStreamer()
     private val strokes = HashMap<Int, StrokeDescription>()
+    private val ends = HashMap<Int, PointF>()
     private var inFlight = false
 
     private val callback = object : GestureResultCallback() {
         override fun onCompleted(gestureDescription: GestureDescription?) = onDispatchDone()
-        override fun onCancelled(gestureDescription: GestureDescription?) = onDispatchDone()
+        override fun onCancelled(gestureDescription: GestureDescription?) {
+            strokes.clear(); ends.clear()
+            streamer.restartStrokes(SystemClock.uptimeMillis())
+            onDispatchDone()
+        }
     }
 
     override fun onServiceConnected() {
@@ -47,7 +53,7 @@ class InputService : AccessibilityService() {
 
     fun onTouch(pts: List<Point>) {
         handler.post {
-            val bounds = getSystemService(WindowManager::class.java).currentWindowMetrics.bounds
+            val bounds = getSystemService(WindowManager::class.java).maximumWindowMetrics.bounds
             val fingers = pts.map {
                 val (x, y) = CoordMapper.toPixels(it.x, it.y, bounds.width(), bounds.height())
                 Finger(it.id, x, y)
@@ -78,10 +84,16 @@ class InputService : AccessibilityService() {
         if (batch.isEmpty()) return
         val builder = GestureDescription.Builder()
         for (seg in batch) {
+            val prevEnd = if (seg.isNew) null else ends[seg.id]
+            val fromX = prevEnd?.x ?: seg.fromX
+            val fromY = prevEnd?.y ?: seg.fromY
+            // The framework cancels a continued stroke that does not move, so a hold drifts by half a pixel.
+            val toX = if (seg.willContinue && fromX == seg.toX && fromY == seg.toY) seg.toX + 0.5f else seg.toX
             val path = Path().apply {
-                moveTo(seg.fromX, seg.fromY)
-                lineTo(seg.toX, seg.toY)
+                moveTo(fromX, fromY)
+                lineTo(toX, seg.toY)
             }
+            if (seg.willContinue) ends[seg.id] = PointF(toX, seg.toY) else ends.remove(seg.id)
             val prev = if (seg.isNew) null else strokes[seg.id]
             val stroke = prev?.continueStroke(path, 0, seg.durationMs, seg.willContinue)
                 ?: StrokeDescription(path, 0, seg.durationMs, seg.willContinue)
@@ -91,8 +103,9 @@ class InputService : AccessibilityService() {
         inFlight = true
         if (!dispatchGesture(builder.build(), callback, null)) {
             inFlight = false
-            strokes.clear()
+            strokes.clear(); ends.clear()
             streamer.releaseAll()
+            streamer.nextBatch(SystemClock.uptimeMillis())
             Log.w(TAG, "dispatchGesture rejected")
         }
     }

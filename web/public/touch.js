@@ -42,6 +42,5 @@ export function createCoalescer(send, schedule) {
       latest = pts;
       if (!pending) { pending = true; schedule(flush); }
     },
-    flush,
   };
 }
