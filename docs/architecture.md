@@ -26,7 +26,7 @@ hotspot is the only network; nothing leaves the LAN.
 | InputService | `input/InputService.kt` | `AccessibilityService`. Normalized touch → display pixels (rotation-aware) → `dispatchGesture`; at most `getMaxStrokeCount()` fingers (lowest ids). Back/Home/Recents via `performGlobalAction`. |
 | GestureStreamer | `input/GestureStreamer.kt` | Pure Kotlin. Finger snapshots → stroke segments of 20 ms, clocked by dispatch completion, `continueStroke` for ongoing fingers. Unit-tested. |
 | StrokePlanner | `input/StrokePlanner.kt` | Pure Kotlin. Turns a segment plus the previous actual end into the stroke to dispatch (start point, hold nudge). Unit-tested. |
-| MainActivity | `MainActivity.kt` | Status (collects `MirrorState`), server URL, Start (MediaProjection consent), Stop, link to accessibility settings. |
+| MainActivity | `MainActivity.kt` | Status (collects `MirrorState`), server URL or "hotspot off", Start (MediaProjection consent), Stop, link to accessibility settings, Force landscape switch (`OrientationLock`). |
 | BootReceiver | `BootReceiver.kt` | Starts MirrorService after boot; its notification opens MainActivity ([decision](decisions/2026-10-18-boot-starts-service.md)). |
 
 Video transport is isolated behind `ScreenSource` + `PeerManager`. If the Tesla
@@ -74,9 +74,11 @@ normalized `x,y` × real display size is a 1:1 mapping.
 
 ## Orientation
 
-The phone is mounted landscape with system auto-rotate on. Capture follows the
-logical display, not the physical one, so the picture on the Tesla is always
-upright: an app that supports landscape fills the view; a portrait-only app
+The phone can lie anywhere. The "Force landscape" switch in `MainActivity`
+(`OrientationLock`, needs the "Modify system settings" permission) turns
+auto-rotate off and sets the system user rotation to landscape, so every
+landscape-capable app renders horizontally. Capture follows the logical
+display, not the physical one: an app that supports landscape fills the view; a portrait-only app
 appears as a tall image centered with black bars, and touches still map 1:1.
 On a display size change `ScreenSource` restarts capture with the new size,
 `MirrorService` pushes a new `state`, and the page recomputes the video box

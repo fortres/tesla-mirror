@@ -1,7 +1,7 @@
 # In-car phone setup
 
-One-time setup for the dedicated car phone (Android 11+, always charging,
-mounted landscape).
+One-time setup for the dedicated car phone (Android 11+, always charging).
+It can lie anywhere; no landscape mount is needed.
 
 1. Install the APK: `adb install app-release.apk` or open the file on the phone.
 2. Settings → Accessibility → enable tesla-mirror. Never force-stop the app: Android
@@ -13,9 +13,10 @@ mounted landscape).
 6. Pair the phone with the Tesla over Bluetooth. The phone becomes the Tesla
    phone: audio and incoming calls go through the car natively. Put a SIM in the
    phone or forward the main number to it if calls are needed.
-7. Sign in to Waze, Telegram, YouTube on the phone. Turn system auto-rotate
-   on so apps follow the landscape mount. Apps that only support portrait
-   show as a tall image in the middle of the Tesla screen; that is expected.
+7. Sign in to Waze, Telegram, YouTube on the phone. Open the app and turn on
+   "Force landscape" (grant "Modify system settings" once, then flip the switch
+   again). Apps that only support portrait still show as a tall image in the
+   middle of the Tesla screen; that is expected.
 8. Open the app, tap Start, accept screen capture.
 9. In the Tesla: connect Wi-Fi to the phone's hotspot, open the browser at the
    URL shown in the app (`http://<phone-ip>:8080`), bookmark it. Re-check it after

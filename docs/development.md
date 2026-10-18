@@ -21,7 +21,8 @@ avdmanager create avd -n tesla-mirror -k "system-images;android-30;google_apis;x
    (Settings → Accessibility → tesla-mirror), open the app, tap Start, accept
    the screen capture dialog. (Headless: find the buttons with
    `adb shell uiautomator dump` and use `adb shell input tap`.)
-4. `adb forward tcp:8080 tcp:8080`
+4. The emulator has no hotspot, so the app shows "hotspot off" instead of a URL;
+   reach the page with `adb forward tcp:8080 tcp:8080`.
 5. Open `http://localhost:8080` in desktop Chrome. DevTools device mode gives
    touch events; pinch is Shift + drag.
 

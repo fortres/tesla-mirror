@@ -42,11 +42,26 @@ class MainActivity : AppCompatActivity() {
         binding.stop.setOnClickListener { startService(serviceIntent(MirrorService.ACTION_STOP)) }
         binding.openAccessibility.setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
 
+        binding.forceLandscape.setOnCheckedChangeListener { button, checked ->
+            if (!button.isPressed) return@setOnCheckedChangeListener
+            if (OrientationLock.canWrite(this)) {
+                OrientationLock.set(contentResolver, checked)
+            } else {
+                button.isChecked = !checked
+                startActivity(OrientationLock.requestPermissionIntent(this))
+            }
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) { MirrorState.flow.collect { render(it) } }
         }
 
         if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else serve()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.forceLandscape.isChecked = OrientationLock.isForced(contentResolver)
     }
 
     private fun serve() = startForegroundService(serviceIntent(MirrorService.ACTION_SERVE))
@@ -58,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         binding.capture.text = "capture: ${if (s.capturing) "on" else "off"}"
         binding.accessibility.text = "accessibility: ${if (s.accessibility) "on" else "off"}"
         binding.hint.text = when {
-            s.capturing && s.url != null -> "Open ${s.url} in the Tesla browser"
+            s.capturing && s.url != null -> "Open ${s.url} in the Tesla browser (only the third number changes between reboots)"
             s.capturing -> "Turn the hotspot on"
             else -> "Tap Start to share the screen"
         }

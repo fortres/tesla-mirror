@@ -9,7 +9,8 @@
         android:id="@+id/url"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="20sp" />
+        android:fontFamily="monospace"
+        android:textSize="22sp" />
 
     <TextView
         android:id="@+id/capture"
@@ -47,4 +48,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Open accessibility settings" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/forceLandscape"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Force landscape" />
 </LinearLayout>

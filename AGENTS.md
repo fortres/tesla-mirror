@@ -49,6 +49,7 @@ docs/                living documentation, see below
 
 ## Docs
 
+- [README.md](README.md) — human-facing overview, requirements, limitations.
 - [agent-workflow.md](docs/agent-workflow.md) — execution model, model routing, review moments.
 - [architecture.md](docs/architecture.md) — components, data flow, where each lives.
 - [protocol.md](docs/protocol.md) — WebSocket messages between page and phone.
