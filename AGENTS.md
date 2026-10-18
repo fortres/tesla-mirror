@@ -29,6 +29,7 @@ covers what you changed and it matters to the next reader, add it there.
 - Kotlin side is small by design; keep gesture and mapping logic free of
   Android framework dependencies so it stays unit-testable.
 - Web side is plain HTML/JS ES modules, no build step, no framework.
+- Web and tools code is formatted with Prettier (`cd web && npm run format`); Kotlin with the Android Studio formatter.
 - Targets Android 11+ (minSdk 30), stock OS, no root. Do not add
   root-only or Play-Store-only mechanisms.
 - Plans run subagent-driven with per-role models (Sonnet builds, Haiku

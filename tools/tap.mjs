@@ -1,6 +1,7 @@
 // Usage: node tools/tap.mjs <x> <y> [host:port]   (x, y in 0..1)
 const [x, y, hostPort = 'localhost:8080'] = process.argv.slice(2);
-const valid = v => v !== undefined && v.trim() !== '' && Number.isFinite(+v) && +v >= 0 && +v <= 1;
+const valid = (v) =>
+  v !== undefined && v.trim() !== '' && Number.isFinite(+v) && +v >= 0 && +v <= 1;
 if (!valid(x) || !valid(y)) {
   console.error('usage: node tools/tap.mjs <x> <y> [host:port]   (x, y in 0..1)');
   process.exit(2);

@@ -11,10 +11,17 @@ export function connect({ url, onOpen, onMessage, onClose, backoff = nextBackoff
   function open() {
     timer = null;
     socket = new WebSocket(url);
-    socket.onopen = () => { delay = 1000; onOpen && onOpen(); };
-    socket.onmessage = e => {
+    socket.onopen = () => {
+      delay = 1000;
+      onOpen && onOpen();
+    };
+    socket.onmessage = (e) => {
       let msg;
-      try { msg = JSON.parse(e.data); } catch { return; }
+      try {
+        msg = JSON.parse(e.data);
+      } catch {
+        return;
+      }
       onMessage && onMessage(msg);
     };
     socket.onclose = () => {
@@ -32,7 +39,10 @@ export function connect({ url, onOpen, onMessage, onClose, backoff = nextBackoff
     },
     close() {
       stopped = true;
-      if (timer) { clearTimeout(timer); timer = null; }
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
       if (socket) socket.close();
     },
   };

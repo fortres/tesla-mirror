@@ -9,3 +9,4 @@ captures/
 node_modules/
 *.apk
 *.keystore
+.history/

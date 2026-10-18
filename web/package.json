@@ -1,1 +1,13 @@
-{"name":"tesla-mirror-web","private":true,"type":"module","scripts":{"test":"node --test test/"}}
+{
+  "name": "tesla-mirror-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "format": "prettier --write . ../tools ../.claude/settings.json",
+    "format:check": "prettier --check . ../tools ../.claude/settings.json"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}

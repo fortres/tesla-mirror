@@ -1,11 +1,14 @@
 export function videoBox(viewportW, viewportH, aspect) {
   let w = viewportW;
   let h = w / aspect;
-  if (h > viewportH) { h = viewportH; w = h * aspect; }
+  if (h > viewportH) {
+    h = viewportH;
+    w = h * aspect;
+  }
   return { x: (viewportW - w) / 2, y: (viewportH - h) / 2, w, h };
 }
 
-const clamp01 = v => Math.min(1, Math.max(0, v));
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 export function normalize(clientX, clientY, box) {
   const x = (clientX - box.x) / box.w;
@@ -40,7 +43,10 @@ export function createCoalescer(send, schedule) {
   return {
     push(pts) {
       latest = pts;
-      if (!pending) { pending = true; schedule(flush); }
+      if (!pending) {
+        pending = true;
+        schedule(flush);
+      }
     },
   };
 }

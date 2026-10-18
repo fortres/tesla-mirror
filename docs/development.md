@@ -45,11 +45,17 @@ if you force-stop, re-enable it, see the checklist below).
 Delete that folder to go back to the bundled page. There is no in-app toggle.
 Not for the car phone.
 
+## Formatting
+
+Web and tools code is formatted with Prettier (config in `.prettierrc`):
+`cd web && npm install && npm run format`. Run `npm run format:check` before
+committing. Kotlin follows the Android Studio default formatter and `.editorconfig`.
+
 ## Tests
 
 - Kotlin: `./gradlew test`. Covers coordinate mapping and clamping,
   `GestureStreamer` snapshot → segments, message parsing.
-- Web: `cd web && node --test`. Covers normalization with letterbox and touch
+- Web: `cd web && npm test`. Covers normalization with letterbox and touch
   coalescing. The same ES modules run in the browser and in node.
 - Synthetic touch: `node tools/tap.mjs <x> <y> [host:port]` (x, y in 0..1,
   default `localhost:8080`) connects to `/ws` and sends a tap to confirm
