@@ -14,9 +14,10 @@ export function nextBackoff(prevMs) {
  * @param {() => void} [options.onOpen]
  * @param {(msg: InboundMsg) => void} [options.onMessage]
  * @param {() => void} [options.onClose]
+ * @param {(buf: ArrayBuffer) => void} [options.onBinary]
  * @param {(prevMs: number) => number} [options.backoff]
  */
-export function connect({ url, onOpen, onMessage, onClose, backoff = nextBackoff }) {
+export function connect({ url, onOpen, onMessage, onClose, onBinary, backoff = nextBackoff }) {
   /** @type {WebSocket | null} */
   let socket = null;
   /** @type {ReturnType<typeof setTimeout> | null} */
@@ -27,11 +28,16 @@ export function connect({ url, onOpen, onMessage, onClose, backoff = nextBackoff
   function open() {
     timer = null;
     const s = (socket = new WebSocket(url));
+    s.binaryType = 'arraybuffer';
     s.onopen = () => {
       delay = 1000;
       onOpen && onOpen();
     };
     s.onmessage = (e) => {
+      if (e.data instanceof ArrayBuffer) {
+        onBinary && onBinary(e.data);
+        return;
+      }
       let msg;
       try {
         msg = JSON.parse(e.data);

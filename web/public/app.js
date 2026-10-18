@@ -2,6 +2,8 @@ import { connect } from './ws.js';
 import { startPeer } from './peer.js';
 import { videoBox, normalize, snapshot, createCoalescer } from './touch.js';
 import { createDebug } from './debug.js';
+import { transportOf } from './caps.js';
+import { startH264, h264Supported } from './h264.js';
 
 /** @import { InboundMsg, OutboundMsg, Point, StateMsg } from './types.js' */
 
@@ -30,6 +32,8 @@ function mustQuery(parent, selector) {
 
 /** @type {HTMLVideoElement} */
 const video = must('video');
+/** @type {HTMLCanvasElement} */
+const canvas = must('canvas');
 /** @type {HTMLElement} */
 const hint = must('hint');
 /** @type {HTMLElement} */
@@ -43,6 +47,7 @@ const debugEl = must('debug');
 /** @type {HTMLElement} */
 const debugToggle = must('debugToggle');
 const debug = createDebug(debugEl);
+const keyButtons = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-key]'));
 
 /** @type {ReturnType<typeof connect> | null} */
 let ws = null;
@@ -56,6 +61,13 @@ let latestPts = [];
 /** @type {ReturnType<typeof setInterval> | null} */
 let heartbeat = null;
 let peerGen = 0;
+/** @type {ReturnType<typeof startH264> | null} */
+let h264 = null;
+let h264Gen = 0;
+let h264Pending = false;
+/** @type {Promise<boolean> | null} */
+let decoderSupported = null;
+let touchEnabled = true;
 /** @type {Set<number>} */
 const startedInside = new Set();
 /** @type {Set<number>} */
@@ -123,13 +135,64 @@ function beginPeer() {
   });
 }
 
+function closeH264() {
+  h264Gen++;
+  h264Pending = false;
+  if (h264) {
+    h264.close();
+    h264 = null;
+  }
+}
+
+async function beginH264() {
+  const gen = ++h264Gen;
+  h264Pending = true;
+  setHint('Waiting for first frame', 'Move something on the phone');
+  decoderSupported ??= h264Supported().then((ok) => {
+    debug.set('decoder', ok ? 'yes' : 'no');
+    return ok;
+  });
+  if (!(await decoderSupported)) {
+    if (gen === h264Gen)
+      setHint('Browser cannot decode H.264', 'Use the Android phone or update the car');
+    return;
+  }
+  if (gen !== h264Gen) return;
+  h264 = startH264({
+    canvas,
+    onFirstFrame: () => {
+      if (gen === h264Gen) setHint(null);
+    },
+    onStat: (stat) => {
+      if (gen !== h264Gen) return;
+      if (stat.error !== undefined) debug.set('error', stat.error);
+      if (stat.dropped !== undefined) debug.set('dropped', stat.dropped);
+      if (stat.decoded !== undefined) debug.set('decoded', stat.decoded);
+    },
+  });
+}
+
 /** @param {StateMsg} msg */
 function onState(msg) {
+  const { transport, touch } = transportOf(msg);
+  const h264ws = transport === 'h264ws';
+  touchEnabled = touch;
+  canvas.hidden = !h264ws;
+  video.hidden = h264ws;
+  keyButtons.forEach((b) => (b.hidden = !touch));
   if (!msg.capturing) setHint(WAITING_HINT);
-  a11y.hidden = msg.accessibility;
+  a11y.hidden = msg.accessibility || !touch;
   capture = msg.capture;
   updateBox();
+  debug.set('transport', transport);
   debug.set('capturing', msg.capturing);
+  if (h264ws) {
+    if (peer) closePeer();
+    if (msg.capturing && !h264 && !h264Pending) beginH264();
+    else if (!msg.capturing) closeH264();
+    return;
+  }
+  closeH264();
   if (msg.capturing && !peer) beginPeer();
   else if (!msg.capturing && peer) closePeer();
 }
@@ -142,8 +205,12 @@ function start() {
       if (ws !== mine) return;
       debug.set('ws', 'closed');
       closePeer();
+      closeH264();
       setHint('Reconnecting…');
       a11y.hidden = true;
+    },
+    onBinary: (buf) => {
+      if (ws === mine && h264) h264.push(buf);
     },
     /** @param {InboundMsg} msg */
     onMessage: (msg) => {
@@ -156,6 +223,7 @@ function start() {
 
 /** @param {TouchEvent} e */
 function onTouch(e) {
+  if (!touchEnabled) return;
   const ended = e.type === 'touchend' || e.type === 'touchcancel';
   let relevant = false;
   for (const t of e.changedTouches) {
@@ -199,13 +267,9 @@ for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
   });
 }
 
-document
-  .querySelectorAll('[data-key]')
-  .forEach((b) =>
-    b.addEventListener('click', () =>
-      sendJson({ t: 'key', k: /** @type {HTMLElement} */ (b).dataset.key ?? '' }),
-    ),
-  );
+keyButtons.forEach((b) =>
+  b.addEventListener('click', () => sendJson({ t: 'key', k: b.dataset.key ?? '' })),
+);
 debugToggle.addEventListener('click', () => {
   debugEl.hidden = !debugEl.hidden;
   debugToggle.classList.toggle('is-active', !debugEl.hidden);

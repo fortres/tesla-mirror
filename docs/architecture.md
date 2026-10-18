@@ -40,11 +40,20 @@ everything else unchanged.
 | `index.html` | Video element, side panel, debug overlay. `user-scalable=no`. |
 | `style.css` | Full-viewport black layout, `touch-action: none`, side panel, debug overlay. Tesla-like look from tokens on `:root`; plain kebab-case classes (no BEM), ids are JS hooks only and never styled, no tag selectors. |
 | `app.js` | Entry: wires WS, peer, touch, panel. |
-| `ws.js` | WebSocket with 1–5 s reconnect backoff; sends/receives protocol messages. |
+| `ws.js` | WebSocket with 1–5 s reconnect backoff; sends/receives protocol messages; binary messages go to `onBinary`. |
 | `peer.js` | recvonly `RTCPeerConnection`; offer → answer → ICE; tears down and reconnects on `failed`/`disconnected`. |
 | `touch.js` | Pure helpers: video box, normalization to it (letterbox-aware; touches that start outside the box or on the side panel are ignored for their whole lifetime, others are clamped to the box), per-frame coalescing. Page re-sends the latest snapshot every 100 ms while a finger is down. |
+| `caps.js` | Pure. `transportOf(state)` → `{transport, touch}`; missing fields mean `webrtc` / `true` (older Android phones). |
+| `frame.js` | Pure. `parseFrame` for the 16-byte binary header, `createKeyGate` (start only on a keyframe, re-arm on decoder backlog). |
+| `h264.js` | `h264ws` playback: WebCodecs `VideoDecoder` (`avc1.4D401F`, Annex B) drawing into `#canvas`; `h264Supported()` probes the browser. A decoder error replaces the decoder and waits for the next keyframe. |
 | `debug.js` | WS/ICE state, fps, bitrate from `getStats`, last touch events. |
 | `types.js` | JSDoc typedefs shared by the modules (messages, touch point, video box). |
+
+The `state` message picks the transport. `webrtc` (Android) plays the `<video>`
+track as above. `h264ws` (iOS) shows `#canvas` instead, sends no `offer`, and
+decodes the binary frames from the socket. `touch: false` makes the page
+ignore touches and hide the Back/Home/Recents buttons and the accessibility
+badge; the debug button stays. See [protocol.md](protocol.md).
 
 ## Gesture model
 
