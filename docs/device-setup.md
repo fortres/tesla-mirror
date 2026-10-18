@@ -1,0 +1,22 @@
+# In-car phone setup
+
+One-time setup for the dedicated car phone (Android 11+, always charging,
+mounted landscape).
+
+1. Install the APK: `adb install app-release.apk` or open the file on the phone.
+2. Settings → Accessibility → enable tesla-mirror.
+3. Settings → Apps → tesla-mirror → Battery → unrestricted. Allow autostart if
+   the OEM has such a switch.
+4. Developer options → enable "Stay awake while charging".
+5. Hotspot on. Settings → Hotspot → disable "Turn off hotspot automatically".
+6. Pair the phone with the Tesla over Bluetooth. The phone becomes the Tesla
+   phone: audio and incoming calls go through the car natively. Put a SIM in the
+   phone or forward the main number to it if calls are needed.
+7. Sign in to Waze, Telegram, YouTube on the phone. Lock screen orientation
+   off so apps follow the landscape mount, or force landscape per app.
+8. Open the app, tap Start, accept screen capture.
+9. In the Tesla: connect Wi-Fi to the phone's hotspot, open the browser at the
+   URL shown in the app (typically `http://192.168.43.1:8080`), bookmark it.
+
+After a phone reboot only step 8 repeats: Android 11 cannot grant screen
+capture without a tap.
