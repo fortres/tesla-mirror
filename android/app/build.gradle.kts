@@ -25,7 +25,7 @@ android {
         viewBinding = true
     }
 
-    sourceSets["main"].resources.srcDir("../web") // web/public/** becomes classpath "public/**"
+    sourceSets["main"].resources.srcDir("../../web") // web/public/** becomes classpath "public/**"
 
     packaging {
         resources.excludes += setOf(

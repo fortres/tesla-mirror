@@ -5,7 +5,7 @@ JSON over WebSocket → gestures injected via AccessibilityService. The phone's
 hotspot is the only network; nothing leaves the LAN.
 
 ```
- Tesla browser (web/public)              Android phone (app/)
+ Tesla browser (web/public)              Android phone (android/app/)
  ┌───────────────────────┐   hotspot     ┌─────────────────────────────────┐
  │ <video> recvonly      │◄──── video ───│ PeerManager ◄── ScreenSource    │
  │ touch capture         │── WS /ws ────►│ WebServer ──► InputService      │
@@ -15,7 +15,7 @@ hotspot is the only network; nothing leaves the LAN.
                                          └─────────────────────────────────┘
 ```
 
-## Phone components (`app/src/main/java/app/teslamirror/`)
+## Phone components (`android/app/src/main/java/app/teslamirror/`)
 
 | Component | File | Responsibility |
 |-----------|------|----------------|

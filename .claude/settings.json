@@ -1,9 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew test*)",
-      "Bash(./gradlew assembleDebug*)",
-      "Bash(./gradlew installDebug*)",
+      "Bash(cd android && ./gradlew test*)",
+      "Bash(cd android && ./gradlew assembleDebug*)",
+      "Bash(cd android && ./gradlew installDebug*)",
       "Bash(node --test*)",
       "Bash(node tools/*)",
       "Bash(adb devices*)",

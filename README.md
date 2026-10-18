@@ -30,7 +30,7 @@ v1: verified end to end on an Android 11 emulator; first car test pending, see
 
 ## Quick start
 
-Build and install the app (`./gradlew installDebug`), then follow
+Build and install the app (`cd android && ./gradlew installDebug`), then follow
 [docs/device-setup.md](docs/device-setup.md).
 
 ## Development

@@ -20,7 +20,7 @@ avdmanager create avd -n tesla-mirror -k "system-images;android-30;google_apis;x
 ## Run on the emulator
 
 1. Start the API 30 emulator.
-2. Build and install `app` from Android Studio (or `./gradlew installDebug`).
+2. Build and install `android/app` from Android Studio (or `cd android && ./gradlew installDebug`).
 3. In the emulator: enable the app's accessibility service
    (Settings → Accessibility → tesla-mirror), open the app, tap Start, accept
    the screen capture dialog. (Headless: find the buttons with
@@ -59,7 +59,7 @@ Kotlin follows the Android Studio default formatter and `.editorconfig`.
 
 ## Tests
 
-- Kotlin: `./gradlew test`. Covers coordinate mapping and clamping,
+- Kotlin: `cd android && ./gradlew test`. Covers coordinate mapping and clamping,
   `GestureStreamer` snapshot → segments, message parsing.
 - Web: `cd web && npm test`. Covers normalization with letterbox and touch
   coalescing. The same ES modules run in the browser and in node.

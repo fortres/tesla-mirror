@@ -10,3 +10,5 @@ node_modules/
 *.apk
 *.keystore
 .history/
+ios/*.xcodeproj/
+ios/build/
