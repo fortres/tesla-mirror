@@ -6,7 +6,7 @@ import VideoToolbox
 
 /// Throttles to 30 fps, scales to half size and uprights landscape frames. Pipeline queue only.
 final class FrameSource {
-    private(set) var outputSize: (w: Int, h: Int) = (0, 0)
+    private(set) var outputSize = PixelSize(w: 0, h: 0)
     private(set) var inputCount = 0
 
     // slightly under 1/30 s so 60 Hz input alternates cleanly despite timestamp jitter
@@ -14,9 +14,10 @@ final class FrameSource {
     private let onFrame: (CVPixelBuffer, CMTime) -> Void
     private let rotator = FrameRotator()
     private var transfer: VTPixelTransferSession?
-    private var scaledPool: PixelBufferPool?
+    private var scaledPool = PixelPoolSlot()
     private var basePts: CMTime?
     private var last: (buffer: CVPixelBuffer, pts: CMTime)?
+    private var lastEmitHost = CMTime.invalid
     private var lastSeconds = -Double.infinity
 
     init(onFrame: @escaping (CVPixelBuffer, CMTime) -> Void) {
@@ -34,9 +35,8 @@ final class FrameSource {
         let relative = CMTimeSubtract(pts, base)
         guard CMTimeGetSeconds(relative) - lastSeconds >= minInterval else { return }
 
-        let half = (w: even(CVPixelBufferGetWidth(input) / 2), h: even(CVPixelBufferGetHeight(input) / 2))
-        if scaledPool?.size != half { scaledPool = PixelBufferPool(size: half) }
-        guard let scaled = scaledPool?.makeBuffer() else { return }
+        let half = PixelSize(w: even(CVPixelBufferGetWidth(input) / 2), h: even(CVPixelBufferGetHeight(input) / 2))
+        guard let scaled = scaledPool.pool(for: half)?.makeBuffer() else { return }
         let status = VTPixelTransferSessionTransferImage(transfer, from: input, to: scaled)
         guard status == noErr else {
             broadcastLog.error("VTPixelTransferSessionTransferImage failed: \(status)")
@@ -53,26 +53,28 @@ final class FrameSource {
 
     /// Re-emits the last picture; ReplayKit sends nothing while the screen is static.
     func repeatLast() {
-        guard let last, let base = basePts else { return }
-        let now = CMTimeSubtract(CMClockGetTime(CMClockGetHostTimeClock()), base)
-        let next = CMTimeAdd(last.pts, CMTime(value: 1, timescale: 30))
-        emit(last.buffer, CMTimeMaximum(now, next))
+        guard let last else { return }
+        let step = CMTimeMaximum(CMTime(value: 1, timescale: 30), CMTimeSubtract(Self.hostNow(), lastEmitHost))
+        emit(last.buffer, CMTimeAdd(last.pts, step))
     }
 
     func invalidate() {
         if let transfer { VTPixelTransferSessionInvalidate(transfer) }
         transfer = nil
-        scaledPool = nil
+        scaledPool = PixelPoolSlot()
         last = nil
         rotator.invalidate()
     }
 
     private func emit(_ buffer: CVPixelBuffer, _ pts: CMTime) {
         last = (buffer, pts)
+        lastEmitHost = Self.hostNow()
         lastSeconds = CMTimeGetSeconds(pts)
-        outputSize = (w: CVPixelBufferGetWidth(buffer), h: CVPixelBufferGetHeight(buffer))
+        outputSize = PixelSize(w: CVPixelBufferGetWidth(buffer), h: CVPixelBufferGetHeight(buffer))
         onFrame(buffer, pts)
     }
+
+    private static func hostNow() -> CMTime { CMClockGetTime(CMClockGetHostTimeClock()) }
 
     private func even(_ value: Int) -> Int { max(2, value & ~1) }
 

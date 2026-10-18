@@ -2,10 +2,10 @@ import CoreVideo
 
 /// NV12 buffer pool capped at 3 buffers; `makeBuffer` returns nil when all are in use.
 final class PixelBufferPool {
-    let size: (w: Int, h: Int)
+    let size: PixelSize
     private let pool: CVPixelBufferPool
 
-    init?(size: (w: Int, h: Int)) {
+    init?(size: PixelSize) {
         let poolAttributes = [kCVPixelBufferPoolMinimumBufferCountKey: 3] as CFDictionary
         let bufferAttributes = [
             kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
@@ -28,5 +28,24 @@ final class PixelBufferPool {
         var buffer: CVPixelBuffer?
         let status = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(nil, pool, aux, &buffer)
         return status == kCVReturnSuccess ? buffer : nil
+    }
+}
+
+struct PixelSize: Equatable {
+    let w: Int
+    let h: Int
+}
+
+/// Holds one pool; a failed size is not retried until the size changes.
+struct PixelPoolSlot {
+    private var pool: PixelBufferPool?
+    private var failed: PixelSize?
+
+    mutating func pool(for size: PixelSize) -> PixelBufferPool? {
+        if let pool, pool.size == size { return pool }
+        if failed == size { return nil }
+        pool = PixelBufferPool(size: size)
+        failed = pool == nil ? size : nil
+        return pool
     }
 }

@@ -4,8 +4,12 @@ import Telegraph
 /// HTTP + WebSocket server on the hotspot. One WebSocket client at a time, the newest wins.
 /// All sends and client changes run on `queue`; call the send methods from it.
 final class WebServer: ServerWebSocketDelegate {
+    static let backlogLimit = 1_048_576
+
     /// Called on `queue`, after the state message was sent.
     var onClientConnected: (() -> Void)?
+    /// Called on `queue` when the backlog falls back under the limit.
+    var onDrained: (() -> Void)?
 
     private let port: Int
     private let publicDir: URL
@@ -124,10 +128,14 @@ final class WebServer: ServerWebSocketDelegate {
         guard message.opcode == .pong, case .binary(let data) = message.payload, data.count == 8 else { return }
         let value = data.enumerated().reduce(UInt64(0)) { $0 | UInt64($1.element) << (8 * UInt64($1.offset)) }
         queue.async { [self] in
-            locked {
-                guard client === webSocket else { return }
+            let drained: Bool = locked {
+                guard client === webSocket else { return false }
+                let before = sent > acked ? sent - acked : 0
                 acked = max(acked, value)
+                let after = sent > acked ? sent - acked : 0
+                return before > UInt64(Self.backlogLimit) && after <= UInt64(Self.backlogLimit)
             }
+            if drained { onDrained?() }
         }
     }
 }

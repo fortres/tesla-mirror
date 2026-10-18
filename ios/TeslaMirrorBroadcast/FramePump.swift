@@ -8,12 +8,20 @@ final class FramePump {
     var onKeyframeRequested: (() -> Void)?
 
     private let server: WebServer
-    private var policy = DropPolicy()
+    private var policy = DropPolicy(limitBytes: WebServer.backlogLimit)
     private var awaitingKey = true
 
     init(server: WebServer, encoder: H264Encoder) {
         self.server = server
         self.encoder = encoder
+    }
+
+    var isWaitingForKey: Bool { policy.waitingForKey }
+
+    /// A rebuilt encoder starts a new stream that must begin on its own keyframe.
+    func replaceEncoder(_ new: H264Encoder) {
+        encoder = new
+        awaitingKey = true
     }
 
     /// A new client must start on a keyframe.
@@ -23,7 +31,6 @@ final class FramePump {
     }
 
     func push(isKey: Bool, ptsUs: UInt64, annexB: [UInt8]) {
-        if isKey { awaitingKey = false }
         switch policy.decide(isKey: isKey, backlogBytes: server.backlogBytes) {
         case .drop:
             return
@@ -32,7 +39,8 @@ final class FramePump {
             onKeyframeRequested?()
             return
         case .send:
-            if awaitingKey { return }
+            if awaitingKey && !isKey { return }
+            if isKey { awaitingKey = false }
             server.sendBinary(FrameHeader.encode(isKey: isKey, ptsUs: ptsUs) + annexB)
         }
     }

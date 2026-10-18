@@ -17,7 +17,8 @@ class SampleHandler: RPBroadcastSampleHandler {
     private var server: WebServer?
     private var source: FrameSource?
     private var pump: FramePump?
-    private var encoderSize = (w: 0, h: 0)
+    private var encoderSize = PixelSize(w: 0, h: 0)
+    private var generation = 0
 
     override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
         guard let publicDir = Bundle.main.url(forResource: "public", withExtension: nil) else {
@@ -28,6 +29,11 @@ class SampleHandler: RPBroadcastSampleHandler {
         server.onClientConnected = { [weak self] in
             self?.pump?.clientConnected()
             self?.repeatLastSoon()
+        }
+        server.onDrained = { [weak self] in
+            guard let self, let pump = self.pump, pump.isWaitingForKey else { return }
+            pump.encoder.requestKeyframe()
+            self.repeatLastSoon()
         }
         do {
             try server.start()
@@ -108,21 +114,28 @@ class SampleHandler: RPBroadcastSampleHandler {
         if source.outputSize != encoderSize || pump == nil {
             pump?.encoder.invalidate()
             let size = source.outputSize
+            generation += 1
+            let current = generation
             let encoder = H264Encoder(
                 width: size.w, height: size.h,
-                onFailure: { [weak self] in self?.finishBroadcastWithError(Self.error("Encoder could not start")) },
+                onFailure: { [weak self] in
+                    DispatchQueue.main.async { self?.finishBroadcastWithError(Self.error("Encoder could not start")) }
+                },
                 onFrame: { [weak self] isKey, ptsUs, bytes in
-                    self?.queue.async { self?.pump?.push(isKey: isKey, ptsUs: ptsUs, annexB: bytes) }
+                    self?.queue.async {
+                        guard let self, self.generation == current else { return }
+                        self.pump?.push(isKey: isKey, ptsUs: ptsUs, annexB: bytes)
+                    }
                 })
             if let pump {
-                pump.encoder = encoder
+                pump.replaceEncoder(encoder)
             } else {
                 let pump = FramePump(server: server, encoder: encoder)
                 pump.onKeyframeRequested = { [weak self] in self?.repeatLastSoon() }
                 self.pump = pump
             }
             encoderSize = size
-            server.captureSize = size
+            server.captureSize = (size.w, size.h)
             server.sendState()
         }
         pump?.encoder.encode(buffer, pts: pts)

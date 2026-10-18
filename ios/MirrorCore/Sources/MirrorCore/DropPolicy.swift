@@ -2,7 +2,7 @@ public struct DropPolicy: Sendable {
     public enum Decision: Equatable, Sendable { case send, drop, dropAndRequestKey }
 
     private let limitBytes: Int
-    private var waitingForKey = false
+    public private(set) var waitingForKey = false
 
     public init(limitBytes: Int = 1_048_576) {
         self.limitBytes = limitBytes
@@ -10,6 +10,10 @@ public struct DropPolicy: Sendable {
 
     public mutating func decide(isKey: Bool, backlogBytes: Int) -> Decision {
         if isKey {
+            if backlogBytes > limitBytes {
+                waitingForKey = true
+                return .drop
+            }
             waitingForKey = false
             return .send
         }
