@@ -22,7 +22,7 @@ hotspot is the only network; nothing leaves the LAN.
 | MirrorService | `MirrorService.kt` | Foreground service (`mediaProjection` type). Starts/stops server, capture, peer. |
 | ScreenSource | `video/ScreenSource.kt` | Wraps libwebrtc `ScreenCapturerAndroid`; video track from the MediaProjection grant. Half-scale capture, 30 fps, 4 Mbit/s cap. |
 | PeerManager | `video/PeerManager.kt` | One `PeerConnection`, answers the browser's offer, relays ICE over WS. Host candidates only, no STUN/TURN. |
-| WebServer | `net/WebServer.kt` | HTTP :8080 serving `web/public` from assets; WebSocket `/ws`. One client: a new connection closes the previous one. |
+| WebServer | `net/WebServer.kt` | HTTP :8080 serving `web/public` from classpath resources (`public/**`); WebSocket `/ws`. One client: a new connection closes the previous one. |
 | InputService | `input/InputService.kt` | `AccessibilityService`. Normalized touch → display pixels (rotation-aware) → `dispatchGesture`. Back/Home/Recents via `performGlobalAction`. |
 | GestureStreamer | `input/GestureStreamer.kt` | Pure Kotlin. Finger snapshots → stroke segments every ~20 ms, `continueStroke` for ongoing fingers. Unit-tested. |
 | MainActivity | `MainActivity.kt` | Status, server URL, Start (MediaProjection consent), link to accessibility settings. |
