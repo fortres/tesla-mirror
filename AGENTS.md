@@ -35,6 +35,7 @@ covers what you changed and it matters to the next reader, add it there.
 
 ```
 AGENTS.md            this file (CLAUDE.md imports it)
+.claude/             Claude Code project settings: permissions and the docs-check hook
 app/                 Android app, Kotlin, package com.fortres.teslamirror
 web/public/          page served to the Tesla browser (bundled as APK assets)
 web/test/            node --test tests for the page modules
@@ -49,4 +50,5 @@ docs/                living documentation, see below
 - [development.md](docs/development.md) — build, run on emulator, test without the car.
 - [device-setup.md](docs/device-setup.md) — one-time setup of the in-car phone and Tesla.
 - [car-checklist.md](docs/car-checklist.md) — what to verify in the car in one trip.
-- [superpowers/specs/](docs/superpowers/specs/) — dated design specs (decision record).
+- [decisions/](docs/decisions/) — dated records of decisions made after the spec (e.g. a transport change).
+- [superpowers/specs/](docs/superpowers/specs/) — original dated design specs; not edited retroactively.

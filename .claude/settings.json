@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew test*)",
+      "Bash(./gradlew assembleDebug*)",
+      "Bash(./gradlew installDebug*)",
+      "Bash(node --test*)",
+      "Bash(node tools/*)",
+      "Bash(adb devices*)",
+      "Bash(adb forward*)",
+      "Bash(adb logcat*)",
+      "Bash(adb shell dumpsys*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-docs.sh",
+            "timeout": 10,
+            "statusMessage": "Checking docs against code changes"
+          }
+        ]
+      }
+    ]
+  }
+}
