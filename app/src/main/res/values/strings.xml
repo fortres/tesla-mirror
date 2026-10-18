@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">tesla-mirror</string>
+    <string name="accessibility_description">Injects touches received from the Tesla browser.</string>
 </resources>
