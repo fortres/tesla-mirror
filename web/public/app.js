@@ -46,6 +46,7 @@ function beginPeer() {
 }
 
 function onState(msg) {
+  $('hint').textContent = 'Tap Start on phone';
   $('hint').hidden = msg.capturing;
   $('a11y').hidden = msg.accessibility !== false;
   capture = msg.capture;
@@ -59,7 +60,12 @@ function start() {
   const mine = ws = connect({
     url: `ws://${location.host}/ws`,
     onOpen: () => debug.set('ws', 'open'),
-    onClose: () => { if (ws !== mine) return; debug.set('ws', 'closed'); closePeer(); },
+    onClose: () => {
+      if (ws !== mine) return;
+      debug.set('ws', 'closed');
+      closePeer();
+      $('hint').textContent = 'Reconnecting…'; $('hint').hidden = false; $('a11y').hidden = true;
+    },
     onMessage: msg => {
       if (ws !== mine) return;
       if (msg.t === 'state') onState(msg);

@@ -4,7 +4,8 @@ One-time setup for the dedicated car phone (Android 11+, always charging,
 mounted landscape).
 
 1. Install the APK: `adb install app-release.apk` or open the file on the phone.
-2. Settings → Accessibility → enable tesla-mirror.
+2. Settings → Accessibility → enable tesla-mirror. Never force-stop the app: Android
+   then disables the service and you must re-enable it.
 3. Settings → Apps → tesla-mirror → Battery → unrestricted. Allow autostart if
    the OEM has such a switch.
 4. Developer options → enable "Stay awake while charging".

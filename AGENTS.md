@@ -6,7 +6,7 @@ server: the phone runs a web server on its hotspot, the car's browser opens it.
 
 ## Status
 
-Scaffold in place, implementation in progress; see docs/superpowers/plans/.
+v1 runs on the emulator; car verification pending (docs/car-checklist.md).
 See [docs/architecture.md](docs/architecture.md) for how it works and
 [docs/superpowers/specs/](docs/superpowers/specs/) for the original design
 rationale and decisions.

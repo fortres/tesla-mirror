@@ -77,7 +77,7 @@ from the video element's `resize` event.
 - The service re-reads the hotspot address every 10 s and the accessibility
   state every 2 s, and pushes `state` to the page on any change.
 - Whoever detects a failure reconnects: WS drop → page reconnects and
-  re-offers; peer failed → page reconnects WS; capture stopped → server stays
+  re-offers (page shows "Reconnecting…" meanwhile); peer failed → page reconnects WS; capture stopped → server stays
   up, page shows hint; accessibility off → page shows badge, touches ignored.
 - Screen stays on via developer option "Stay awake while charging"; hotspot
   auto-off is disabled. See [device-setup.md](device-setup.md).

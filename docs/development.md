@@ -18,12 +18,14 @@ avdmanager create avd -n tesla-mirror -k "system-images;android-30;google_apis;x
 2. Build and install `app` from Android Studio (or `./gradlew installDebug`).
 3. In the emulator: enable the app's accessibility service
    (Settings → Accessibility → tesla-mirror), open the app, tap Start, accept
-   the screen capture dialog.
+   the screen capture dialog. (Headless: find the buttons with
+   `adb shell uiautomator dump` and use `adb shell input tap`.)
 4. `adb forward tcp:8080 tcp:8080`
 5. Open `http://localhost:8080` in desktop Chrome. DevTools device mode gives
    touch events; pinch is Shift + drag.
 
-The emulator uses a software H.264 encoder, so quality and latency are worse
+The emulator image has no H.264 encoder and negotiates VP8 (H.264 is verified
+on the phone, see [car-checklist.md](car-checklist.md)), so quality and latency are worse
 than on a real phone. That is fine for development.
 
 ## Dev mode for the web page
@@ -44,8 +46,21 @@ Not for the car phone.
   `GestureStreamer` snapshot → segments, message parsing.
 - Web: `cd web && node --test`. Covers normalization with letterbox and touch
   coalescing. The same ES modules run in the browser and in node.
-- Synthetic touch: `node tools/tap.mjs <x> <y>` connects to `/ws` and sends a
-  tap at normalized coordinates to confirm injection reaches the emulator.
+- Synthetic touch: `node tools/tap.mjs <x> <y> [host:port]` (x, y in 0..1,
+  default `localhost:8080`) connects to `/ws` and sends a tap to confirm
+  injection reaches the emulator. Exits non-zero if the socket cannot open.
+
+## Headless end-to-end
+
+Headless Chrome (`google-chrome --headless=new --remote-debugging-port=9222
+--autoplay-policy=no-user-gesture-required
+--disable-features=WebRtcHideLocalIpsWithMdns http://localhost:8080`) stands in
+for the Tesla browser, driven by a throwaway Node script over the DevTools
+protocol: `Runtime.evaluate` reads `#debug` and `getVideoPlaybackQuality()`,
+`Input.dispatchTouchEvent` sends tap, drag and pinch. The emulator NAT hides
+the phone's UDP, so rewrite its `10.0.2.x` ICE candidates to `127.0.0.1` and run
+`adb emu redir add udp:<port>:<port>` per port. Check effects with
+`adb exec-out screencap -p`. A static screen emits no frames (fps 0).
 
 ## Manual checklist (laptop)
 
