@@ -14,8 +14,10 @@ protocol.
 
 - iOS app + Broadcast Upload Extension that captures the whole screen and
   serves the mirror page over the phone's Personal Hotspot.
-- Video over H.264 in binary WebSocket frames, decoded in the browser with
-  WebCodecs (Tesla browser is Chromium 140+ since 2026.14.6.10).
+- Video over H.264 in binary WebSocket frames, played in the browser through
+  Media Source Extensions: the page wraps each access unit in a fragmented MP4
+  segment (Tesla browser is Chromium 140+ since 2026.14.6.10; WebCodecs is not
+  usable because it requires a secure context and the page is plain http).
 - Page learns the transport and touch capability from the phone and adapts.
 - Repository restructured into `android/`, `ios/`, `web/`, `tools/`, `docs/`.
 - Docs made platform-neutral; per-platform details split out.
@@ -33,8 +35,8 @@ protocol.
 
 - iPhone 15 Pro on iOS 26+; deployment target iOS 17 (ReplayKit broadcast,
   VideoToolbox, Network APIs are older than that).
-- Tesla browser Chromium 140+ with WebCodecs; H.264 decode assumed (Theater
-  uses it) and verified in the car on the first run.
+- Tesla browser Chromium 140+ with MSE H.264 (YouTube in Theater uses MSE);
+  verified in the car on the first run.
 - Build machine: macOS with Xcode 26+, XcodeGen, SideStore for install and
   weekly re-signing with a free Apple ID (limits: 3 apps, 10 app ids per
   7 days; this project uses 2 ids: app + extension; no App Groups needed).
@@ -86,14 +88,18 @@ show whether the extension's server is up.
 
 ## Page (web/public)
 
-- `h264.js` (new): `WebSocket.binaryType = "arraybuffer"`, parses the header,
-  feeds `VideoDecoder` configured as `{codec: "avc1.4D401F", optimizeForLatency: true}`
-  in Annex B mode (no `description`); first chunk must be a keyframe; output
-  frames are drawn on a `<canvas class="video">` sized to the frame, same
-  fitting rules as the video element; `frame.close()` after draw. If
-  `decoder.decodeQueueSize > 2`, chunks are dropped until the next keyframe.
-  On `VideoDecoder.isConfigSupported` false or a decoder error, the overlay
-  shows `decoder: unsupported` and the hint explains it.
+- `fmp4.js` (new, pure): splits an Annex B access unit into NAL units, takes
+  SPS/PPS from keyframes, builds the init segment (`ftyp`+`moov` with `avcC`,
+  size from `state.capture`) and one `moof`+`mdat` media segment per frame
+  (AVCC length-prefixed samples, decode time from `ptsUs`, sync flag from the
+  keyframe bit); codec string `avc1.PPCCLL` from SPS bytes 1–3.
+- `h264.js` (new): `MediaSource` on a dedicated `<video class="video">`;
+  `SourceBuffer` in `segments` mode; appends are queued while `updating`; when
+  more than 3 segments are queued, frames are dropped until the next keyframe
+  (`createKeyGate`); to stay live, if `buffered.end - currentTime > 0.3` the
+  video seeks to `buffered.end - 0.05`; old buffer is removed beyond 10 s. If
+  `MediaSource.isTypeSupported(codec)` is false, the overlay shows
+  `decoder: no` and the hint explains it.
 - `app.js`: branches on `state.transport`; `state.touch` controls panel and
   touch capture; first-frame hint reused for both transports.
 - Overlay adds `transport`, `decoder`, `dropped`.
@@ -153,7 +159,7 @@ hit, the scale constant drops to 1/3.
 
 | Risk | Mitigation |
 |------|------------|
-| Tesla's Chromium has no H.264 in WebCodecs | Overlay shows it in the first minute. Fallback: WebRTC inside the extension with the existing `peer.js` path (separate spec; same page and protocol). |
+| Tesla's MSE rejects the stream or adds too much latency | Overlay shows `decoder` and latency in the first minute. Fallback: WebRTC inside the extension with the existing `peer.js` path (separate spec; same page and protocol). |
 | Extension exceeds 50 MB | Scale constant to 1/3; no WebRTC keeps the baseline low. |
 | Telegraph unmaintained or too heavy | Replace with a small Network.framework server; the `WebServer` boundary isolates it. |
 | Free-account signing expires weekly | SideStore re-signs on the phone; limits documented. |
@@ -176,4 +182,4 @@ README and AGENTS.md describe both platforms; `docs/architecture.md` becomes
 the shared overview with `docs/android.md` and `docs/ios.md` for details;
 `development.md`, `device-setup.md`, `car-checklist.md` get per-platform
 sections; `docs/decisions/2026-10-19-ios-h264-over-websocket.md` records why
-iOS uses H.264 over WebSocket instead of WebRTC.
+iOS uses H.264 over WebSocket with MSE instead of WebRTC, and why not WebCodecs.

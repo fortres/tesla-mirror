@@ -4,7 +4,7 @@
 
 **Goal:** Mirror an iPhone screen into the Tesla browser (view-only) next to the existing Android app, in one repo with one page and one protocol.
 
-**Architecture:** Android moves to `android/`; `state` gains `transport` and `touch`; the page gets an H.264-over-WebSocket path decoded with WebCodecs onto a canvas; iOS ships an app plus a ReplayKit Broadcast Upload Extension that serves the page and streams VideoToolbox H.264 in binary frames; pure Swift logic lives in a SwiftPM package tested on Linux in Docker.
+**Architecture:** Android moves to `android/`; `state` gains `transport` and `touch`; the page gets an H.264-over-WebSocket path played through MSE (page-side fMP4 muxing); iOS ships an app plus a ReplayKit Broadcast Upload Extension that serves the page and streams VideoToolbox H.264 in binary frames; pure Swift logic lives in a SwiftPM package tested on Linux in Docker.
 
 **Tech Stack:** Kotlin/Gradle (existing), plain JS ES modules + JSDoc/tsc + Prettier (existing), Node 22 with `ws` (dev tool only), Swift 6.1 / SwiftPM, XcodeGen 2.46.0, Telegraph 0.40.0 (SPM), ReplayKit, VideoToolbox, SwiftUI.
 
@@ -20,13 +20,13 @@
 - Golden header vector (both languages test it): keyframe, pts 1_000_000 µs → `01 01 00 00 40 42 0f 00 00 00 00 00 00 00 00 00`.
 - Encoder: 30 fps, half-scale even dimensions, Main profile auto level, no frame reordering, keyframe every 60 frames, average 4_000_000 bps, data-rate limit 500_000 bytes per 1 s.
 - Drop rule: backlog > 1_048_576 bytes → drop non-key frames and request a keyframe; after any drop, send nothing until the next keyframe.
-- Page decoder: codec `avc1.4D401F`, `optimizeForLatency: true`, Annex B (no `description`), first chunk must be key, drop to next key when `decodeQueueSize > 2`.
+- Page player: MSE (WebCodecs is secure-context-only and the page is plain http); fMP4 muxed on the page; first segment after init must be a keyframe; drop to next key when more than 3 segments wait for `SourceBuffer`; live edge kept within 0.3 s.
 - iOS: deployment target 17.0; bundle ids `app.teslamirror.ios` and `app.teslamirror.ios.broadcast`; port 8080; `GET /health` → `{"capturing":bool}`; hotspot URL fallback `http://172.20.10.1:8080`; no App Groups, no background modes.
 - Swift on Linux: `docker run --rm -v "$PWD":/src -w /src/ios/MirrorCore swift:6.1 swift test`. Apple-framework Swift files cannot compile here; check them with `docker run --rm -v "$PWD":/src -w /src swift:6.1 swiftc -parse <files>` (syntax only).
 
 ## Review Focus
 
-1. A page that connects mid-stream receives P-frames first: it must ignore everything until a keyframe, never feed the decoder a non-key first chunk → test in Task 3 (`createKeyGate`).
+1. A page that connects mid-stream receives P-frames first: it must ignore everything until a keyframe and build the init segment from that keyframe's SPS/PPS → tests in Task 3 (`createKeyGate`) and Task 4 (`fmp4` init from key only).
 2. Truncated or wrong-version binary messages must be ignored, not crash the decoder → test in Task 3 (`parseFrame` returns null for < 16 bytes and version ≠ 1).
 3. A page talking to an Android phone must behave exactly as before (WebRTC, touch, panel) when `transport` is `webrtc` — and also when an older phone omits the new fields → test in Task 4 (`transportOf(state)` defaults to `webrtc`/`true`).
 4. A slow socket must not grow the phone's memory without bound: backlog over the limit drops frames and recovers on the next keyframe → test in Task 6 (`DropPolicy` sequence).
