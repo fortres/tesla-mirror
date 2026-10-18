@@ -1,8 +1,10 @@
 # Development
 
 Everything except Tesla-browser quirks can be developed and tested on a laptop.
+Linux does web, Android, docs and the iOS `MirrorCore` tests; the iOS app and
+extension need a Mac (see [ios.md](ios.md)).
 
-## Requirements
+## Requirements (Android)
 
 - Android Studio with an API 30 (Android 11) emulator image.
 - JDK 17 on the machine: the build pins `jvmToolchain(17)` and does not download a toolchain.
@@ -59,6 +61,7 @@ Kotlin follows the Android Studio default formatter and `.editorconfig`.
 
 ## Tests
 
+- Swift (`MirrorCore`, Linux or Mac): `docker run --rm -v "$PWD":/src -w /src/ios/MirrorCore swift:6.1 swift test`.
 - Kotlin: `cd android && ./gradlew test`. Covers coordinate mapping and clamping,
   `GestureStreamer` snapshot → segments, message parsing.
 - Web: `cd web && npm test`. Covers normalization with letterbox and touch
@@ -66,6 +69,23 @@ Kotlin follows the Android Studio default formatter and `.editorconfig`.
 - Synthetic touch: `node tools/tap.mjs <x> <y> [host:port]` (x, y in 0..1,
   default `localhost:8080`) connects to `/ws` and sends a tap to confirm
   injection reaches the emulator. Exit codes: 0 sent, 1 cannot connect (5 s) or closed before the release, 2 bad arguments.
+
+## iOS project on Linux
+
+XcodeGen builds and runs on Linux in the `swift:6.1` image, which checks
+`ios/project.yml` without a Mac. Build it once from a clone of XcodeGen 2.46.0,
+then generate against a copy of `ios` and `web` (the project references
+`../web/public`):
+
+```
+git clone --depth 1 --branch 2.46.0 https://github.com/yonaskolb/XcodeGen /tmp/xcodegen
+docker run --rm -v /tmp/xcodegen:/xg -w /xg swift:6.1 swift build -c release
+mkdir /tmp/gen && cp -r ios web /tmp/gen/
+docker run --rm -e USER=root -v /tmp/xcodegen:/xg -v /tmp/gen:/gen -w /gen/ios swift:6.1 /xg/.build/release/xcodegen generate
+```
+
+`swiftc -parse` over the Swift files catches syntax errors only; compiling
+needs Xcode.
 
 ## Page without a phone (iOS path)
 
@@ -110,5 +130,7 @@ the phone's UDP, so rewrite its `10.0.2.x` ICE candidates to `127.0.0.1` and run
   Force-stop disables the accessibility service; re-enable it with
   `adb shell settings put secure enabled_accessibility_services app.teslamirror/app.teslamirror.input.InputService; adb shell settings put secure accessibility_enabled 1`.
 - Debug overlay shows fps, bitrate, ICE state, last touches.
+- iPhone path: see "Page without a phone" above; with a Mac, open
+  `http://<iphone-ip>:8080` in desktop Chrome on the same Wi-Fi.
 
 Real-car verification is a separate trip: [car-checklist.md](car-checklist.md).

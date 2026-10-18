@@ -1,12 +1,15 @@
 # tesla-mirror — agent guide
 
-Android app that mirrors a dedicated in-car phone into the Tesla Model 3 browser
-and injects touches from the Tesla screen back into the phone. No external
-server: the phone runs a web server on its hotspot, the car's browser opens it.
+Android and iOS apps that mirror a phone into the Tesla browser. Android also
+injects touches from the Tesla screen back into the phone; iPhone is view-only.
+No external server: the phone runs a web server on its hotspot, the car's
+browser opens it.
 
 ## Status
 
-v1 runs on the emulator; car verification pending (docs/car-checklist.md).
+Android: runs on the emulator. iOS: page path verified with `tools/fake-ios.mjs`;
+extension awaits its first Mac build ([docs/ios.md](docs/ios.md)). Car
+verification pending for both ([docs/car-checklist.md](docs/car-checklist.md)).
 See [docs/architecture.md](docs/architecture.md) for how it works and
 [docs/superpowers/specs/](docs/superpowers/specs/) for the original design
 rationale and decisions.
@@ -28,6 +31,7 @@ covers what you changed and it matters to the next reader, add it there.
 - Docs are short and cross-linked. Put details in `docs/`, not here.
 - Kotlin side is small by design; keep gesture and mapping logic free of
   Android framework dependencies so it stays unit-testable.
+- iOS: Swift, XcodeGen `project.yml` is the source of truth, never commit `.xcodeproj`; pure logic in `ios/MirrorCore`.
 - Web side is plain HTML/JS ES modules, no build step, no framework.
 - Web code: plain JS ES modules typed with JSDoc and checked by `tsc` (`cd web && npm run typecheck`), formatted with Prettier (`npm run format`). CSS: kebab-case classes, ids only as JS hooks, no tag selectors, no BEM. Kotlin: Android Studio formatter.
 - Targets Android 11+ (minSdk 30), stock OS, no root. Do not add
@@ -42,10 +46,10 @@ covers what you changed and it matters to the next reader, add it there.
 AGENTS.md            this file (CLAUDE.md imports it)
 .claude/             Claude Code project settings: permissions and the docs-check hook
 android/             Android app (Gradle project), Kotlin, package app.teslamirror
-ios/                 iOS app (added later)
+ios/                 iOS app: SwiftUI host, broadcast extension, MirrorCore package
 web/public/          page served to the Tesla browser (bundled as classpath resources `public/**`)
 web/test/            node --test tests for the page modules
-tools/               dev scripts (synthetic touch sender, etc.)
+tools/               dev scripts (synthetic touch sender, fake iPhone stream)
 docs/                living documentation, see below
 ```
 
@@ -53,10 +57,12 @@ docs/                living documentation, see below
 
 - [README.md](README.md) — human-facing overview, requirements, limitations.
 - [agent-workflow.md](docs/agent-workflow.md) — execution model, model routing, review moments.
-- [architecture.md](docs/architecture.md) — components, data flow, where each lives.
+- [architecture.md](docs/architecture.md) — shared overview: page, transports, data flow.
+- [android.md](docs/android.md) — Android components, gesture model, orientation, startup.
+- [ios.md](docs/ios.md) — iPhone app, broadcast extension, signing, Mac build.
 - [protocol.md](docs/protocol.md) — WebSocket messages between page and phone.
 - [development.md](docs/development.md) — build, run on emulator, test without the car.
-- [device-setup.md](docs/device-setup.md) — one-time setup of the in-car phone and Tesla.
+- [device-setup.md](docs/device-setup.md) — one-time setup of the in-car phone (Android or iPhone) and Tesla.
 - [car-checklist.md](docs/car-checklist.md) — what to verify in the car in one trip.
 - [decisions/](docs/decisions/) — dated records of decisions made after the spec (e.g. a transport change).
 - [superpowers/specs/](docs/superpowers/specs/) — original dated design specs; not edited retroactively.
