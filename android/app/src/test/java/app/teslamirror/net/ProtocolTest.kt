@@ -35,6 +35,8 @@ class ProtocolTest {
         assertEquals(true, j["capturing"]!!.jsonPrimitive.boolean)
         assertEquals(false, j["accessibility"]!!.jsonPrimitive.boolean)
         assertEquals(1440, j["capture"]!!.jsonObject["w"]!!.jsonPrimitive.int)
+        assertEquals("webrtc", j["transport"]!!.jsonPrimitive.content)
+        assertEquals(true, j["touch"]!!.jsonPrimitive.boolean)
     }
     @Test fun buildsAnswerAndIce() {
         assertEquals("""{"t":"answer","sdp":"v=0"}""", Protocol.answer("v=0"))
