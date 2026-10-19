@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse hook: warn when code under android/, ios/ or web/ is about to be committed
+# PreToolUse hook: warn when code under android/, ios/, web/ or tools/ is about to be committed
 # without any change under docs/. Never blocks; output is advice for the agent.
 set -u
 cmd=$(jq -r '.tool_input.command // empty')
