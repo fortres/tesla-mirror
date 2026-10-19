@@ -1,0 +1,164 @@
+import CoreMedia
+import Foundation
+import os
+import ReplayKit
+
+let broadcastLog = Logger(subsystem: "app.teslamirror.ios", category: "broadcast")
+
+class SampleHandler: RPBroadcastSampleHandler {
+    private static let maxPendingBuffers = 2
+
+    private let queue = DispatchQueue(label: "app.teslamirror.ios.pipeline")
+    private let pendingLock = NSLock()
+    private var pending = 0
+    private var memoryPressure: DispatchSourceMemoryPressure?
+    private var staticTimer: DispatchSourceTimer?
+    private var staticInputCount = 0
+
+    // pipeline queue only
+    private var server: WebServer?
+    private var source: FrameSource?
+    private var pump: FramePump?
+    private var encoderSize = PixelSize(w: 0, h: 0)
+    private var generation = 0
+
+    override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
+        guard let publicDir = Bundle.main.url(forResource: "public", withExtension: nil) else {
+            finishBroadcastWithError(Self.error("Bundled page is missing"))
+            return
+        }
+        let server = WebServer(publicDir: publicDir, queue: queue)
+        server.onClientConnected = { [weak self] in
+            self?.pump?.clientConnected()
+            self?.repeatLastSoon()
+        }
+        server.onDrained = { [weak self] in
+            guard let self, let pump = self.pump, pump.isWaitingForKey else { return }
+            pump.encoder.requestKeyframe()
+            self.repeatLastSoon()
+        }
+        do {
+            try server.start()
+        } catch {
+            finishBroadcastWithError(error)
+            return
+        }
+        queue.sync {
+            self.server = server
+            self.source = FrameSource { [weak self] buffer, pts in self?.encode(buffer, pts) }
+            self.startStaticTimer()
+        }
+        let pressure = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: queue)
+        pressure.setEventHandler { broadcastLog.warning("Memory pressure on broadcast extension") }
+        pressure.resume()
+        memoryPressure = pressure
+    }
+
+    override func broadcastPaused() {
+        queue.async {
+            self.server?.capturing = false
+            self.server?.sendState()
+        }
+    }
+
+    override func broadcastResumed() {
+        queue.async {
+            self.server?.capturing = true
+            self.server?.sendState()
+            self.pump?.encoder.requestKeyframe()
+            self.repeatLastSoon()
+        }
+    }
+
+    override func broadcastFinished() {
+        memoryPressure?.cancel()
+        memoryPressure = nil
+        queue.sync {
+            staticTimer?.cancel()
+            staticTimer = nil
+            server?.stop()
+            pump?.encoder.invalidate()
+            source?.invalidate()
+            server = nil
+            source = nil
+            pump = nil
+        }
+    }
+
+    override func processSampleBuffer(_ sampleBuffer: CMSampleBuffer, with sampleBufferType: RPSampleBufferType) {
+        guard sampleBufferType == .video else { return }
+        pendingLock.lock()
+        let busy = pending >= Self.maxPendingBuffers
+        if !busy { pending += 1 }
+        pendingLock.unlock()
+        guard !busy else { return }
+        queue.async {
+            self.source?.handle(sampleBuffer)
+            self.pendingLock.lock()
+            self.pending -= 1
+            self.pendingLock.unlock()
+        }
+    }
+
+    private static func error(_ message: String) -> NSError {
+        NSError(domain: "app.teslamirror.ios", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+
+    /// ReplayKit sends nothing while the screen is static; re-emit the last picture so a keyframe can go out.
+    private func repeatLastSoon() {
+        guard let source else { return }
+        let count = source.inputCount
+        queue.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let source = self?.source, source.inputCount == count else { return }
+            source.repeatLast()
+        }
+    }
+
+    /// Safety net: a late joiner or a lost keyframe on a static screen would otherwise wait for the next screen change.
+    private func startStaticTimer() {
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + 2, repeating: 2)
+        timer.setEventHandler { [weak self] in
+            guard let self, let source = self.source, let server = self.server else { return }
+            let count = source.inputCount
+            defer { self.staticInputCount = count }
+            guard count == self.staticInputCount, server.hasClient, server.capturing, let pump = self.pump else { return }
+            pump.encoder.requestKeyframe()
+            source.repeatLast()
+        }
+        timer.resume()
+        staticTimer = timer
+    }
+
+    private func encode(_ buffer: CVPixelBuffer, _ pts: CMTime) {
+        guard let server, let source, server.capturing else { return }
+        if source.outputSize != encoderSize || pump == nil {
+            pump?.encoder.invalidate()
+            let size = source.outputSize
+            generation += 1
+            let current = generation
+            let encoder = H264Encoder(
+                width: size.w, height: size.h,
+                onFailure: { [weak self] in
+                    DispatchQueue.main.async { self?.finishBroadcastWithError(Self.error("Encoder could not start")) }
+                },
+                onFrame: { [weak self] isKey, ptsUs, bytes in
+                    self?.queue.async {
+                        guard let self, self.generation == current else { return }
+                        self.pump?.push(isKey: isKey, ptsUs: ptsUs, annexB: bytes)
+                    }
+                })
+            if let pump {
+                pump.replaceEncoder(encoder)
+            } else {
+                let pump = FramePump(server: server, encoder: encoder)
+                pump.onKeyframeRequested = { [weak self] in self?.repeatLastSoon() }
+                self.pump = pump
+            }
+            encoderSize = size
+            server.captureSize = (size.w, size.h)
+            server.sendState()
+        }
+        pump?.encoder.encode(buffer, pts: pts)
+    }
+}

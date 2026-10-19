@@ -25,12 +25,16 @@ android {
         viewBinding = true
     }
 
-    sourceSets["main"].resources.srcDir("../web") // web/public/** becomes classpath "public/**"
+    sourceSets["main"].resources.srcDir("../../web") // web/public/** becomes classpath "public/**"
 
     packaging {
         resources.excludes += setOf(
             "test/**",
             "package.json",
+            "package-lock.json",
+            "tsconfig.json",
+            "node_modules/**",
+            ".cache/**",
             "META-INF/INDEX.LIST",
             "META-INF/io.netty.versions.properties",
         )

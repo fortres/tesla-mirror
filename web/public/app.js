@@ -2,6 +2,8 @@ import { connect } from './ws.js';
 import { startPeer } from './peer.js';
 import { videoBox, normalize, snapshot, createCoalescer } from './touch.js';
 import { createDebug } from './debug.js';
+import { transportOf } from './caps.js';
+import { startH264, h264Supported } from './h264.js';
 
 /** @import { InboundMsg, OutboundMsg, Point, StateMsg } from './types.js' */
 
@@ -30,6 +32,8 @@ function mustQuery(parent, selector) {
 
 /** @type {HTMLVideoElement} */
 const video = must('video');
+/** @type {HTMLVideoElement} */
+const stream = must('stream');
 /** @type {HTMLElement} */
 const hint = must('hint');
 /** @type {HTMLElement} */
@@ -43,6 +47,7 @@ const debugEl = must('debug');
 /** @type {HTMLElement} */
 const debugToggle = must('debugToggle');
 const debug = createDebug(debugEl);
+const keyButtons = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-key]'));
 
 /** @type {ReturnType<typeof connect> | null} */
 let ws = null;
@@ -56,6 +61,16 @@ let latestPts = [];
 /** @type {ReturnType<typeof setInterval> | null} */
 let heartbeat = null;
 let peerGen = 0;
+/** @type {string | null} Last transport the phone announced; decides the hint when the socket drops. */
+let lastTransport = null;
+/** @type {ReturnType<typeof startH264> | null} */
+let h264 = null;
+let h264Gen = 0;
+/** @type {ReturnType<typeof setInterval> | null} */
+let latencyTimer = null;
+let touchEnabled = true;
+/** @type {boolean | null} */
+let decoderSupported = null;
 /** @type {Set<number>} */
 const startedInside = new Set();
 /** @type {Set<number>} */
@@ -123,13 +138,70 @@ function beginPeer() {
   });
 }
 
+function closeH264() {
+  h264Gen++;
+  if (latencyTimer) clearInterval(latencyTimer);
+  latencyTimer = null;
+  if (h264) {
+    h264.close();
+    h264 = null;
+  }
+}
+
+function beginH264() {
+  const gen = ++h264Gen;
+  setHint('Waiting for first frame', 'Move something on the phone');
+  h264 = startH264({
+    video: stream,
+    getSize: () => capture ?? { w: 1, h: 1 },
+    onFirstFrame: () => {
+      if (gen === h264Gen) setHint(null);
+    },
+    onStat: (stat) => {
+      if (gen !== h264Gen) return;
+      debug.set('dropped', stat.dropped);
+      debug.set('appended', stat.appended);
+    },
+  });
+  latencyTimer = setInterval(() => {
+    const b = stream.buffered;
+    if (b.length > 0) debug.set('latency', (b.end(b.length - 1) - stream.currentTime).toFixed(2));
+  }, 1000);
+}
+
 /** @param {StateMsg} msg */
 function onState(msg) {
+  const { transport, touch } = transportOf(msg);
+  const h264ws = transport === 'h264ws';
+  lastTransport = transport;
+  touchEnabled = touch;
+  if (!touch) {
+    if (heartbeat) clearInterval(heartbeat);
+    heartbeat = null;
+    latestPts = [];
+  }
+  stream.hidden = !h264ws;
+  video.hidden = h264ws;
+  keyButtons.forEach((b) => (b.hidden = !touch));
   if (!msg.capturing) setHint(WAITING_HINT);
-  a11y.hidden = msg.accessibility;
+  a11y.hidden = msg.accessibility || !touch;
   capture = msg.capture;
   updateBox();
+  debug.set('transport', transport);
   debug.set('capturing', msg.capturing);
+  if (h264ws) {
+    if (peer) closePeer();
+    if (decoderSupported === null) {
+      decoderSupported = h264Supported();
+      debug.set('decoder', decoderSupported ? 'yes' : 'no');
+    }
+    if (!msg.capturing) closeH264();
+    else if (!decoderSupported)
+      setHint('Browser cannot play the iPhone stream', 'Use the Android phone or update the car');
+    else if (!h264) beginH264();
+    return;
+  }
+  closeH264();
   if (msg.capturing && !peer) beginPeer();
   else if (!msg.capturing && peer) closePeer();
 }
@@ -142,8 +214,14 @@ function start() {
       if (ws !== mine) return;
       debug.set('ws', 'closed');
       closePeer();
-      setHint('Reconnecting…');
+      closeH264();
+      if (lastTransport === 'h264ws')
+        setHint('Reconnecting…', 'If it does not come back, start the broadcast on the iPhone');
+      else setHint('Reconnecting…');
       a11y.hidden = true;
+    },
+    onBinary: (buf) => {
+      if (ws === mine && h264) h264.push(buf);
     },
     /** @param {InboundMsg} msg */
     onMessage: (msg) => {
@@ -156,6 +234,7 @@ function start() {
 
 /** @param {TouchEvent} e */
 function onTouch(e) {
+  if (!touchEnabled) return;
   const ended = e.type === 'touchend' || e.type === 'touchcancel';
   let relevant = false;
   for (const t of e.changedTouches) {
@@ -199,13 +278,9 @@ for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
   });
 }
 
-document
-  .querySelectorAll('[data-key]')
-  .forEach((b) =>
-    b.addEventListener('click', () =>
-      sendJson({ t: 'key', k: /** @type {HTMLElement} */ (b).dataset.key ?? '' }),
-    ),
-  );
+keyButtons.forEach((b) =>
+  b.addEventListener('click', () => sendJson({ t: 'key', k: b.dataset.key ?? '' })),
+);
 debugToggle.addEventListener('click', () => {
   debugEl.hidden = !debugEl.hidden;
   debugToggle.classList.toggle('is-active', !debugEl.hidden);

@@ -1,10 +1,14 @@
 # Car checklist
 
-Everything to verify in one trip to the car. Collect logs afterwards with
-`adb logcat -s TeslaMirror`.
+Everything to verify in one trip to the car. Sections: [Android](#android),
+[iPhone](#iphone). Shared first steps are in the Android list.
 
-Before leaving: phone set up per [device-setup.md](device-setup.md), app
-running, capture started, hotspot on.
+## Android
+
+Collect logs afterwards with `adb logcat -s TeslaMirror`.
+
+Before leaving: phone set up per [device-setup.md](device-setup.md#android),
+app running, capture started, hotspot on.
 
 1. Tesla Wi-Fi connects to the phone hotspot and stays connected.
 2. Browser opens the page. Note whether the browser is usable while driving
@@ -41,3 +45,27 @@ running, capture started, hotspot on.
 
 Record results in this file or an issue; update constants in `ScreenSource` if
 bitrate or resolution needs tuning.
+
+## iPhone
+
+Before leaving: phone set up per [device-setup.md](device-setup.md#iphone),
+broadcast started, Personal Hotspot on.
+
+1. Tesla joins the hotspot; the page opens at `http://172.20.10.1:8080`
+   (the app shows the address). Browser usable while driving, as above.
+2. Debug overlay shows `transport: h264ws` and `decoder: yes`. If `decoder: no`,
+   note the codec string; fallback is WebRTC in the extension
+   ([decision](decisions/2026-10-19-ios-h264-over-websocket.md)).
+3. Latency: tap the clock, count frames; target under ~300 ms and no growth over
+   minutes. Overlay `dropped` stays low.
+4. Picture survives app switching on the phone, and a static screen still shows
+   a picture after reconnect.
+5. Broadcast stops when the phone locks (Auto-Lock Never prevents it); page then
+   says "Reconnecting…" with "If it does not come back, start the broadcast on
+   the iPhone".
+6. Extension memory: after a long run, check the device log, category
+   `broadcast`, for memory warnings or a killed extension.
+7. Rotation: open a landscape app; the picture is upright. If sideways, flip the
+   rotation mapping in `FrameRotator` ([ios.md](ios.md)).
+8. Bluetooth: audio and an incoming call work through the Tesla.
+9. Car off and on: hotspot reconnects; restart the broadcast if it stopped.

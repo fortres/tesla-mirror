@@ -1,8 +1,7 @@
-app/build/
 .gradle/
 node_modules/
 .superpowers/
 .history/
 *.md
-gradle/
-app/
+android/
+web/.cache/

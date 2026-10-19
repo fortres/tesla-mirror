@@ -6,11 +6,16 @@
     "test": "node --test",
     "format": "prettier --write . ../tools ../.claude/settings.json",
     "format:check": "prettier --check . ../tools ../.claude/settings.json",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "fake-ios:fixture": "docker run --rm -v \"$PWD/.cache\":/out jrottenberg/ffmpeg:7.1-ubuntu -f lavfi -i testsrc2=size=640x1280:rate=30 -t 10 -c:v libx264 -profile:v main -bf 0 -g 60 -x264-params aud=1:repeat-headers=1 -bsf:v h264_mp4toannexb -f h264 /out/fixture.h264",
+    "fake-ios": "node ../tools/fake-ios.mjs .cache/fixture.h264",
+    "fake-ios:sparse": "node ../tools/fake-ios.mjs .cache/fixture.h264 --sparse"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
+    "@types/ws": "8.18.2",
     "prettier": "3.9.10",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "ws": "8.22.0"
   }
 }

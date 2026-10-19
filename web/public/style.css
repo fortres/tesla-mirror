@@ -53,6 +53,7 @@
 
 .hint[hidden],
 .hint-text[hidden],
+.panel-button[hidden],
 .badge[hidden],
 .debug[hidden] {
   display: none;

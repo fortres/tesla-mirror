@@ -10,3 +10,7 @@ node_modules/
 *.apk
 *.keystore
 .history/
+ios/*.xcodeproj/
+ios/build/
+ios/MirrorCore/.build/
+web/.cache/

@@ -9,7 +9,9 @@
     "moduleResolution": "bundler",
     "lib": ["es2022", "dom", "dom.iterable"],
     "types": ["node"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // tools/ resolves ws from web/node_modules
+    "paths": { "ws": ["./node_modules/@types/ws"] }
   },
   "include": ["public/**/*.js", "test/**/*.mjs", "../tools/**/*.mjs"]
 }

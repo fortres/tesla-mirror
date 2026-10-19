@@ -57,6 +57,8 @@ object Protocol {
             put("w", captureW)
             put("h", captureH)
         })
+        put("transport", "webrtc")
+        put("touch", true)
     })
 
     fun answer(sdp: String): String = encode(buildJsonObject {
