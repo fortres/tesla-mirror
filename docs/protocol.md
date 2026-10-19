@@ -21,7 +21,7 @@ time; a new connection closes the previous one.
 
 | Message | Fields | Notes |
 |---------|--------|-------|
-| `state` | `capturing`, `accessibility`, `capture: {w, h}`, `transport`, `touch` | Sent on connect and on every change. `capture` is the captured frame size; the page uses only its aspect ratio. `transport`: `webrtc` (offer/answer, video track) or `h264ws` (binary frames on this socket, see below). `touch`: whether the phone accepts `touch` and `key` messages; `false` means the page hides the key buttons and ignores touches. |
+| `state` | `capturing`, `accessibility`, `capture: {w, h}`, `transport`, `touch` | Sent on connect and on every change. `capture` is the captured frame size; the page uses it for the aspect ratio (`webrtc`) and as the MP4 track size (`h264ws`). `transport`: `webrtc` (offer/answer, video track) or `h264ws` (binary frames on this socket, see below). `touch`: whether the phone accepts `touch` and `key` messages; `false` means the page hides the key buttons and ignores touches. |
 | `answer` | `sdp` | SDP answer. |
 | `ice` | `candidate` | Phone-side ICE candidate (host only). |
 

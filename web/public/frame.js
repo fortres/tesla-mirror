@@ -1,7 +1,7 @@
 /** @typedef {{ key: boolean, ptsUs: number, data: Uint8Array }} VideoFrame */
 
 const HEADER_BYTES = 16;
-export const MAX_DECODE_QUEUE = 2;
+export const MAX_PENDING_SEGMENTS = 15;
 
 /**
  * @param {ArrayBuffer} buf
@@ -18,13 +18,13 @@ export function parseFrame(buf) {
   };
 }
 
-/** Lets only a keyframe start (or restart) the stream; a decoder backlog re-arms it. */
+/** Lets only a keyframe start (or restart) the stream; a backlog of pending segments re-arms it. */
 export function createKeyGate() {
   let armed = true;
   return {
     /**
      * @param {boolean} key
-     * @param {number} queueSize decoder's current decodeQueueSize
+     * @param {number} queueSize media segments waiting to be appended
      * @returns {boolean} whether to feed this frame to the decoder
      */
     accept(key, queueSize) {
@@ -33,7 +33,7 @@ export function createKeyGate() {
         return true;
       }
       if (armed) return false;
-      if (queueSize > MAX_DECODE_QUEUE) {
+      if (queueSize > MAX_PENDING_SEGMENTS) {
         armed = true;
         return false;
       }

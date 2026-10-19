@@ -38,14 +38,14 @@ struct PixelSize: Equatable {
 
 /// Holds one pool; a failed size is not retried until the size changes.
 struct PixelPoolSlot {
-    private var pool: PixelBufferPool?
+    private var current: PixelBufferPool?
     private var failed: PixelSize?
 
     mutating func pool(for size: PixelSize) -> PixelBufferPool? {
-        if let pool, pool.size == size { return pool }
+        if let current, current.size == size { return current }
         if failed == size { return nil }
-        pool = PixelBufferPool(size: size)
-        failed = pool == nil ? size : nil
-        return pool
+        current = PixelBufferPool(size: size)
+        failed = current == nil ? size : nil
+        return current
     }
 }

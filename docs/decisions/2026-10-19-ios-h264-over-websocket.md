@@ -21,9 +21,9 @@ frame into fragmented MP4 (`web/public/fmp4.js`) and plays it through MSE
 ## Consequences
 
 - TCP can build latency. The extension measures the socket backlog with
-  WebSocket ping/pong and drops frames over 1 MB, including keyframes over
-  that size, then waits for the next keyframe. The page drops frames when more
-  than 2 wait for decode.
+  WebSocket ping/pong and drops frames while the socket backlog exceeds 1 MB,
+  keyframes included, then waits for the next keyframe. The page drops frames
+  when more than 15 media segments wait for the SourceBuffer.
 - The page appends on a gapless 33 ms timeline and seeks to the live edge when
   playback lags; verify latency in the car ([car-checklist.md](../car-checklist.md#iphone)).
 - Fallback if MSE adds too much latency or the car rejects it: WebRTC inside

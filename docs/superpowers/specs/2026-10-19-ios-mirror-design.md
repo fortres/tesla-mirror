@@ -95,7 +95,7 @@ show whether the extension's server is up.
   keyframe bit); codec string `avc1.PPCCLL` from SPS bytes 1–3.
 - `h264.js` (new): `MediaSource` on a dedicated `<video class="video">`;
   `SourceBuffer` in `segments` mode; appends are queued while `updating`; when
-  more than 2 segments are queued, frames are dropped until the next keyframe
+  more than 15 segments are queued, frames are dropped until the next keyframe
   (`createKeyGate`); to stay live, if `buffered.end - currentTime > 0.3` the
   video seeks to `buffered.end - 0.05`; old buffer is removed beyond 10 s. If
   `MediaSource.isTypeSupported(codec)` is false, the overlay shows

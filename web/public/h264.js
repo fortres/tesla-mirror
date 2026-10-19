@@ -94,6 +94,11 @@ export function startH264({ video, getSize, onFirstFrame, onStat }) {
     gate = createKeyGate();
   }
 
+  /** Media segments waiting for the SourceBuffer; nothing counts before it exists. */
+  function pendingSegments() {
+    return sb ? queue.filter((s) => s !== initQueued).length : 0;
+  }
+
   function pump() {
     if (!sb || sb.updating || closed) return;
     const next = queue.shift();
@@ -182,7 +187,7 @@ export function startH264({ video, getSize, onFirstFrame, onStat }) {
       if (closed) return;
       const frame = parseFrame(buf);
       if (!frame) return;
-      if (!gate.accept(frame.key, queue.length)) {
+      if (!gate.accept(frame.key, pendingSegments())) {
         dropped++;
         statChanged();
         return;

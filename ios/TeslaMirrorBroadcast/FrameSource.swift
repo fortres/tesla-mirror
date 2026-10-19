@@ -9,6 +9,8 @@ final class FrameSource {
     private(set) var outputSize = PixelSize(w: 0, h: 0)
     private(set) var inputCount = 0
 
+    static let scaleDivisor = 2
+
     // slightly under 1/30 s so 60 Hz input alternates cleanly despite timestamp jitter
     private let minInterval = 1.0 / 30 - 0.002
     private let onFrame: (CVPixelBuffer, CMTime) -> Void
@@ -35,8 +37,8 @@ final class FrameSource {
         let relative = CMTimeSubtract(pts, base)
         guard CMTimeGetSeconds(relative) - lastSeconds >= minInterval else { return }
 
-        let half = PixelSize(w: even(CVPixelBufferGetWidth(input) / 2), h: even(CVPixelBufferGetHeight(input) / 2))
-        guard let scaled = scaledPool.pool(for: half)?.makeBuffer() else { return }
+        let scaledSize = PixelSize(w: even(CVPixelBufferGetWidth(input) / Self.scaleDivisor), h: even(CVPixelBufferGetHeight(input) / Self.scaleDivisor))
+        guard let scaled = scaledPool.pool(for: scaledSize)?.makeBuffer() else { return }
         let status = VTPixelTransferSessionTransferImage(transfer, from: input, to: scaled)
         guard status == noErr else {
             broadcastLog.error("VTPixelTransferSessionTransferImage failed: \(status)")

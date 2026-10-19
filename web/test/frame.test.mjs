@@ -29,7 +29,7 @@ test('key gate waits for the first keyframe', () => {
 test('key gate drops to the next keyframe on backlog', () => {
   const gate = createKeyGate();
   gate.accept(true, 0);
-  assert.equal(gate.accept(false, 3), false);
+  assert.equal(gate.accept(false, 16), false);
   assert.equal(gate.accept(false, 0), false);
   assert.equal(gate.accept(true, 0), true);
 });

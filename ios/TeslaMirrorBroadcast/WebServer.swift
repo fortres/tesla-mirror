@@ -39,6 +39,8 @@ final class WebServer: ServerWebSocketDelegate {
         set { locked { _captureSize = newValue } }
     }
 
+    var hasClient: Bool { locked { client != nil } }
+
     /// Bytes sent that the browser has not yet acknowledged with a pong.
     var backlogBytes: Int { locked { sent > acked ? Int(sent - acked) : 0 } }
 

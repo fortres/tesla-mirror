@@ -61,6 +61,8 @@ let latestPts = [];
 /** @type {ReturnType<typeof setInterval> | null} */
 let heartbeat = null;
 let peerGen = 0;
+/** @type {string | null} Last transport the phone announced; decides the hint when the socket drops. */
+let lastTransport = null;
 /** @type {ReturnType<typeof startH264> | null} */
 let h264 = null;
 let h264Gen = 0;
@@ -171,6 +173,7 @@ function beginH264() {
 function onState(msg) {
   const { transport, touch } = transportOf(msg);
   const h264ws = transport === 'h264ws';
+  lastTransport = transport;
   touchEnabled = touch;
   if (!touch) {
     if (heartbeat) clearInterval(heartbeat);
@@ -212,7 +215,9 @@ function start() {
       debug.set('ws', 'closed');
       closePeer();
       closeH264();
-      setHint('Reconnecting…');
+      if (lastTransport === 'h264ws')
+        setHint('Reconnecting…', 'If it does not come back, start the broadcast on the iPhone');
+      else setHint('Reconnecting…');
       a11y.hidden = true;
     },
     onBinary: (buf) => {

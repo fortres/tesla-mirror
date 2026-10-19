@@ -11,8 +11,8 @@ Transport `webrtc`, `touch: true`. Project in `android/`
 | Component | File | Responsibility |
 |-----------|------|----------------|
 | MirrorService | `MirrorService.kt` | Foreground service (`specialUse` while serving, `mediaProjection` while capturing; stopping capture returns it to serving). Starts the server on boot/app open; starts/stops capture and peer on a single worker thread; publishes `MirrorState` and pushes `state` to the page; releases all fingers when the page disconnects. |
-| ScreenSource | `video/ScreenSource.kt` | Wraps libwebrtc `ScreenCapturerAndroid`; video track from the MediaProjection grant. Half-scale capture, 30 fps, 4 Mbit/s cap. |
-| PeerManager | `video/PeerManager.kt` | One `PeerConnection`, answers the browser's offer, relays ICE over WS. Host candidates over UDP only (TCP candidates disabled), no STUN/TURN. |
+| ScreenSource | `video/ScreenSource.kt` | Wraps libwebrtc `ScreenCapturerAndroid`; video track from the MediaProjection grant. Half-scale capture, 30 fps. |
+| PeerManager | `video/PeerManager.kt` | One `PeerConnection`, answers the browser's offer, relays ICE over WS. Host candidates over UDP only (TCP candidates disabled), no STUN/TURN. 4 Mbit/s cap. |
 | WebServer | `net/WebServer.kt` | HTTP :8080 serving `web/public` from classpath resources (`public/**`), or from the dev folder when present (read once at start, see [development.md](development.md)); WebSocket `/ws`. One client: a new connection closes the previous one. |
 | InputService | `input/InputService.kt` | `AccessibilityService`. Normalized touch → display pixels (rotation-aware) → `dispatchGesture`; at most `getMaxStrokeCount()` fingers (lowest ids). Back/Home/Recents via `performGlobalAction`. |
 | GestureStreamer | `input/GestureStreamer.kt` | Pure Kotlin. Finger snapshots → stroke segments of 20 ms, clocked by dispatch completion, `continueStroke` for ongoing fingers. Unit-tested. |

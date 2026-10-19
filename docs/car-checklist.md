@@ -61,7 +61,8 @@ broadcast started, Personal Hotspot on.
 4. Picture survives app switching on the phone, and a static screen still shows
    a picture after reconnect.
 5. Broadcast stops when the phone locks (Auto-Lock Never prevents it); page then
-   says "Tap Start on phone".
+   says "Reconnecting…" with "If it does not come back, start the broadcast on
+   the iPhone".
 6. Extension memory: after a long run, check the device log, category
    `broadcast`, for memory warnings or a killed extension.
 7. Rotation: open a landscape app; the picture is upright. If sideways, flip the

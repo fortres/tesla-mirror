@@ -37,8 +37,8 @@ WebSocket on port 8080. Messages and the binary frame header:
 | `ws.js` | WebSocket with 1–5 s reconnect backoff; sends/receives protocol messages; binary messages go to `onBinary`. |
 | `peer.js` | recvonly `RTCPeerConnection`; offer → answer → ICE; tears down and reconnects on `failed`/`disconnected`. |
 | `touch.js` | Pure helpers: video box, normalization to it (letterbox-aware; touches that start outside the box or on the side panel are ignored for their whole lifetime, others are clamped to the box), per-frame coalescing. Page re-sends the latest snapshot every 100 ms while a finger is down. |
-| `caps.js` | Pure. `transportOf(state)` → `{transport, touch}`; missing fields mean `webrtc` / `true` (older older Android builds). |
-| `frame.js` | Pure. `parseFrame` for the 16-byte binary header, `createKeyGate` (start only on a keyframe, re-arm on decoder backlog). |
+| `caps.js` | Pure. `transportOf(state)` → `{transport, touch}`; missing fields mean `webrtc` / `true` (older Android builds). |
+| `frame.js` | Pure. `parseFrame` for the 16-byte binary header, `createKeyGate` (start only on a keyframe, re-arm when more than 15 media segments wait for the SourceBuffer). |
 | `fmp4.js` | Pure. Annex B → NAL split, codec string from the SPS, fragmented-MP4 init and media segment boxes. |
 | `h264.js` | `h264ws` playback: parse frames, gate on keyframes, mux to fMP4 and append to a MediaSource on `#stream`; stays near the live edge, trims old buffer, rebuilds on SPS change or append error. `h264Supported()` checks `MediaSource.isTypeSupported`. |
 | `debug.js` | WS/ICE state, fps, bitrate from `getStats`, last touch events. |

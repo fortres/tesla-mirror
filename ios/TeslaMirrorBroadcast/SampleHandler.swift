@@ -12,6 +12,8 @@ class SampleHandler: RPBroadcastSampleHandler {
     private let pendingLock = NSLock()
     private var pending = 0
     private var memoryPressure: DispatchSourceMemoryPressure?
+    private var staticTimer: DispatchSourceTimer?
+    private var staticInputCount = 0
 
     // pipeline queue only
     private var server: WebServer?
@@ -44,6 +46,7 @@ class SampleHandler: RPBroadcastSampleHandler {
         queue.sync {
             self.server = server
             self.source = FrameSource { [weak self] buffer, pts in self?.encode(buffer, pts) }
+            self.startStaticTimer()
         }
         let pressure = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: queue)
         pressure.setEventHandler { broadcastLog.warning("Memory pressure on broadcast extension") }
@@ -71,6 +74,8 @@ class SampleHandler: RPBroadcastSampleHandler {
         memoryPressure?.cancel()
         memoryPressure = nil
         queue.sync {
+            staticTimer?.cancel()
+            staticTimer = nil
             server?.stop()
             pump?.encoder.invalidate()
             source?.invalidate()
@@ -107,6 +112,22 @@ class SampleHandler: RPBroadcastSampleHandler {
             guard let source = self?.source, source.inputCount == count else { return }
             source.repeatLast()
         }
+    }
+
+    /// Safety net: a late joiner or a lost keyframe on a static screen would otherwise wait for the next screen change.
+    private func startStaticTimer() {
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + 2, repeating: 2)
+        timer.setEventHandler { [weak self] in
+            guard let self, let source = self.source, let server = self.server else { return }
+            let count = source.inputCount
+            defer { self.staticInputCount = count }
+            guard count == self.staticInputCount, server.hasClient, server.capturing, let pump = self.pump else { return }
+            pump.encoder.requestKeyframe()
+            source.repeatLast()
+        }
+        timer.resume()
+        staticTimer = timer
     }
 
     private func encode(_ buffer: CVPixelBuffer, _ pts: CMTime) {

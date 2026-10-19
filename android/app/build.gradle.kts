@@ -31,6 +31,9 @@ android {
         resources.excludes += setOf(
             "test/**",
             "package.json",
+            "package-lock.json",
+            "tsconfig.json",
+            "node_modules/**",
             "META-INF/INDEX.LIST",
             "META-INF/io.netty.versions.properties",
         )
