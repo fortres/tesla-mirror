@@ -13,3 +13,4 @@ node_modules/
 ios/*.xcodeproj/
 ios/build/
 ios/MirrorCore/.build/
+web/.cache/

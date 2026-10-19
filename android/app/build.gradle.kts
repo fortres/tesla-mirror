@@ -34,6 +34,7 @@ android {
             "package-lock.json",
             "tsconfig.json",
             "node_modules/**",
+            ".cache/**",
             "META-INF/INDEX.LIST",
             "META-INF/io.netty.versions.properties",
         )

@@ -92,14 +92,15 @@ needs Xcode.
 `tools/fake-ios.mjs` plays the iPhone: it serves `web/public/` and `/health` and
 streams an Annex B H.264 file as `h264ws` binary frames at 30 fps, looping. A new
 client gets `state`, then frames starting at the next keyframe; the newest client
-wins. No ffmpeg needed on the host:
+wins. No ffmpeg needed on the host (the fixture is made in Docker and kept in the
+ignored `web/.cache/`):
 
 ```
-docker run --rm -v "$PWD":/out jrottenberg/ffmpeg:7.1-ubuntu \
-  -f lavfi -i testsrc2=size=640x1280:rate=30 -t 10 -c:v libx264 -profile:v main -bf 0 -g 60 \
-  -x264-params aud=1:repeat-headers=1 -bsf:v h264_mp4toannexb -f h264 /out/fixture.h264
-cd web && npm install && cd ..
-node tools/fake-ios.mjs fixture.h264 [port=8080] [--size 640x1280] [--sparse]
+cd web && npm install
+npm run fake-ios:fixture        # once: 10 s test pattern, 640x1280
+npm run fake-ios                # or fake-ios:sparse (one frame every 2 s after 3 s)
+# open http://localhost:8080
+node ../tools/fake-ios.mjs <file.h264> [port=8080] [--size 640x1280] [--sparse]
 ```
 
 The stream must carry AUD NAL units (`aud=1` above); the tool splits access units at them.
