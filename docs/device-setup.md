@@ -15,6 +15,8 @@ Android 11+. The phone can lie anywhere; no landscape mount is needed.
    the OEM has such a switch.
 4. Developer options → enable "Stay awake while charging".
 5. Hotspot on. Settings → Hotspot → disable "Turn off hotspot automatically".
+   Mobile data, a SIM, and internet access are not required for the Tesla to
+   connect to the phone and open the local mirror page.
 6. Pair the phone with the Tesla over Bluetooth. The phone becomes the Tesla
    phone: audio and incoming calls go through the car natively. Put a SIM in the
    phone or forward the main number to it if calls are needed.
@@ -26,7 +28,10 @@ Android 11+. The phone can lie anywhere; no landscape mount is needed.
 8. Open the app, tap Start, accept screen capture.
 9. In the Tesla: connect Wi-Fi to the phone's hotspot, open the browser at the
    URL shown in the app (`http://<phone-ip>:8080`), bookmark it. Re-check it after
-   a reboot: Android 11 may pick a different hotspot subnet.
+   a reboot: Android may pick a different hotspot subnet. With the hotspot on,
+   the app should show the current URL; wait up to 10 seconds for it to refresh.
+   If the app says "hotspot address unavailable", check that the hotspot is on;
+   the phone can still provide the local connection without mobile internet.
 
 After a phone reboot the service starts itself (the web page is already
 reachable) and its notification opens the app. Only step 8 repeats: Android 11
@@ -45,4 +50,6 @@ View-only. Build and install first: [ios.md](ios.md).
 5. Open the app, tap the broadcast button, choose Tesla Mirror, Start
    Broadcast. Repeat once per drive (also from Control Center).
 6. In the Tesla: connect Wi-Fi to the hotspot, open `http://172.20.10.1:8080`
-   (the app shows the actual address), bookmark it.
+   (the app detects and shows the actual `bridge*` address, with
+   `172.20.10.1` as a fallback), bookmark it. Mobile data and internet access
+   are not required for the local mirror connection.

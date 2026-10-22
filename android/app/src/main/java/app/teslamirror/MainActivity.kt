@@ -69,12 +69,12 @@ class MainActivity : AppCompatActivity() {
     private fun serviceIntent(action: String) = Intent(this, MirrorService::class.java).setAction(action)
 
     private fun render(s: State) {
-        binding.url.text = s.url ?: "hotspot off"
+        binding.url.text = s.url ?: "hotspot address unavailable"
         binding.capture.text = "capture: ${if (s.capturing) "on" else "off"}"
         binding.accessibility.text = "accessibility: ${if (s.accessibility) "on" else "off"}"
         binding.hint.text = when {
             s.capturing && s.url != null -> "Open ${s.url} in the Tesla browser (re-check after a reboot)"
-            s.capturing -> "Turn the hotspot on"
+            s.capturing -> "Hotspot address unavailable; check that the hotspot is on"
             else -> "Tap Start to share the screen"
         }
     }

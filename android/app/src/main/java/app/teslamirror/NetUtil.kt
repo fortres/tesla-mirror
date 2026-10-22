@@ -4,12 +4,21 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 
 object NetUtil {
-    private val hotspotPrefixes = listOf("ap", "swlan", "wlan")
+    private val accessPointPrefixes = listOf("ap", "swlan", "softap")
 
     fun pickHotspotAddress(interfaces: List<Pair<String, List<String>>>): String? {
-        val all = interfaces.flatMap { (name, ips) -> ips.map { name to it } }.filterNot { it.second.startsWith("127.") }
-        return all.firstOrNull { (name, ip) -> hotspotPrefixes.any(name::startsWith) && ip.startsWith("192.168.") }?.second
-            ?: all.firstOrNull { it.second.startsWith("192.168.") }?.second
+        val all = interfaces.flatMap { (name, ips) -> ips.map { name to it } }
+        all.firstOrNull { (name, ip) -> accessPointPrefixes.any(name::startsWith) && isPrivateIpv4(ip) }
+            ?.let { return it.second }
+        return all.firstOrNull { (name, ip) -> name.startsWith("wlan") && isPrivateIpv4(ip) }?.second
+    }
+
+    private fun isPrivateIpv4(address: String): Boolean {
+        val octets = address.split('.').map { it.toIntOrNull() ?: return false }
+        if (octets.size != 4 || octets.any { it !in 0..255 }) return false
+        return octets[0] == 10 ||
+            (octets[0] == 172 && octets[1] in 16..31) ||
+            (octets[0] == 192 && octets[1] == 168)
     }
 
     fun currentInterfaces(): List<Pair<String, List<String>>> = try {

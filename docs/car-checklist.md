@@ -8,7 +8,8 @@ Everything to verify in one trip to the car. Sections: [Android](#android),
 Collect logs afterwards with `adb logcat -s TeslaMirror`.
 
 Before leaving: phone set up per [device-setup.md](device-setup.md#android),
-app running, capture started, hotspot on.
+app running, capture started, hotspot on. Mobile data is not needed for the
+local mirror connection.
 
 1. Tesla Wi-Fi connects to the phone hotspot and stays connected.
 2. Browser opens the page. Note whether the browser is usable while driving
@@ -51,8 +52,8 @@ bitrate or resolution needs tuning.
 Before leaving: phone set up per [device-setup.md](device-setup.md#iphone),
 broadcast started, Personal Hotspot on.
 
-1. Tesla joins the hotspot; the page opens at `http://172.20.10.1:8080`
-   (the app shows the address). Browser usable while driving, as above.
+1. Tesla joins the hotspot; the page opens at the address shown in the app
+   (usually `http://172.20.10.1:8080`). Browser usable while driving, as above.
 2. Debug overlay shows `transport: h264ws` and `decoder: yes`. If `decoder: no`,
    note the codec string; fallback is WebRTC in the extension
    ([decision](decisions/2026-10-19-ios-h264-over-websocket.md)).

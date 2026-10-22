@@ -4,6 +4,7 @@ build/
 local.properties
 *.iml
 .idea/
+.vscode/settings.json
 .kotlin/
 captures/
 node_modules/

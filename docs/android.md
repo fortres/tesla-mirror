@@ -17,7 +17,7 @@ Transport `webrtc`, `touch: true`. Project in `android/`
 | InputService | `input/InputService.kt` | `AccessibilityService`. Normalized touch → display pixels (rotation-aware) → `dispatchGesture`; at most `getMaxStrokeCount()` fingers (lowest ids). Back/Home/Recents via `performGlobalAction`. |
 | GestureStreamer | `input/GestureStreamer.kt` | Pure Kotlin. Finger snapshots → stroke segments of 20 ms, clocked by dispatch completion, `continueStroke` for ongoing fingers. Unit-tested. |
 | StrokePlanner | `input/StrokePlanner.kt` | Pure Kotlin. Turns a segment plus the previous actual end into the stroke to dispatch (start point, hold nudge). Unit-tested. |
-| MainActivity | `MainActivity.kt` | Status (collects `MirrorState`), server URL or "hotspot off", Start (MediaProjection consent), Stop, link to accessibility settings, Force landscape switch (`OrientationLock`). |
+| MainActivity | `MainActivity.kt` | Status (collects `MirrorState`), server URL or "hotspot address unavailable", Start (MediaProjection consent), Stop, link to accessibility settings, Force landscape switch (`OrientationLock`). |
 | BootReceiver | `BootReceiver.kt` | Starts MirrorService after boot; its notification opens MainActivity ([decision](decisions/2026-10-18-boot-starts-service.md)). |
 
 Video transport is isolated behind `ScreenSource` + `PeerManager`. If the Tesla
@@ -70,7 +70,13 @@ from the video element's `resize` event.
   MainActivity, where one tap on Start begins capture. The server is up before
   capture; the page shows "Tap Start on phone" until capture starts.
 - The service re-reads the hotspot address every 10 s and the accessibility
-  state every 2 s, and pushes `state` to the page on any change.
+  state every 2 s, and pushes `state` to the page on any change. Address lookup
+  prefers Android access-point interfaces (`ap*`, `swlan*`, `softap*`) and
+  accepts private IPv4 ranges `10/8`, `172.16/12`, and `192.168/16`. If no such
+  interface is found, it accepts a private address on `wlan*`; the last octet
+  is not assumed to be `.1`. It does not fall back to unrelated interfaces.
+  The displayed "hotspot address unavailable" means the app could not identify
+  an eligible address, not necessarily that the hotspot is off.
 - Whoever detects a failure reconnects: WS drop → page reconnects and
   re-offers (page shows "Reconnecting…" meanwhile); peer failed → page reconnects WS; capture stopped → server stays
   up, page shows hint; accessibility off → page shows a "No touch" badge, touches ignored.

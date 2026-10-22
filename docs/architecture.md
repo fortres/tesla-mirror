@@ -23,7 +23,8 @@ browser over its own hotspot; nothing leaves the LAN.
 ```
 
 The phone serves the page (`web/public/`, bundled into both apps) and the
-WebSocket on port 8080. Messages and the binary frame header:
+WebSocket on port 8080 over its local hotspot. Mobile data or internet access
+is not required. Messages and the binary frame header:
 [protocol.md](protocol.md). Why iOS uses H.264 over WebSocket:
 [decision](decisions/2026-10-19-ios-h264-over-websocket.md).
 
